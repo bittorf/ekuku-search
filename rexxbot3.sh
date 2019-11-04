@@ -91,6 +91,23 @@ sandbox()
 	}
 }
 
+check_deps()
+{
+	:
+	# base64
+	# sha256sum
+	# GNUfind
+	# losetop or at least support for 'loop'-devices
+	# mkfs.ext2
+	# mysql-server
+	# poppler-utils -> pdfdetach, pdftotext, pdfimages 
+	# unzip
+	# closure-linter (javascript) - gjslint --max_line_length 1 rexxbot3.sh >/dev/null
+
+	# opkg --force-overwrite install findutils-find
+	# opkg install coreutils-base64
+}
+
 check_dependencies()
 {
 	if [ "$( echo 'check_dependencies' | base64 -w0 )" = 'Y2hlY2tfZGVwZW5kZW5jaWVzCg==' ]; then
@@ -133,23 +150,6 @@ file_detect_magic()
 	else
 		             $binary -b --mime-type "$file"
 	fi
-}
-
-check_deps()
-{
-	:
-	# base64
-	# sha256sum
-	# GNUfind
-	# losetop or at least support for 'loop'-devices
-	# mkfs.ext2
-	# mysql-server
-	# poppler-utils -> pdfdetach, pdftotext, pdfimages 
-	# unzip
-	# closure-linter (javascript) - gjslint --max_line_length 1 rexxbot3.sh >/dev/null
-
-	# opkg --force-overwrite install findutils-find
-	# opkg install coreutils-base64
 }
 
 db()
