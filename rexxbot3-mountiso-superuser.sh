@@ -1,5 +1,7 @@
 #!/bin/sh
 
+# e.g. while :; do ./rexxbot3-mountiso-superuser.sh; sleep 1; done
+
 mktemp_get_prefix()
 {
 	# e.g. /tmp/tmp.JBNSIHMii8 -> /tmp/tmp
