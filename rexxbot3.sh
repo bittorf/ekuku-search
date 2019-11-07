@@ -537,6 +537,7 @@ extract_metadata_image_jpeg()		# TODO: https://rfc1149.net/devel/recoverjpeg.htm
 			printf '%s' 'VERSION EXIF_DATETIME EXIF_GPSLAT EXIF_GPSLON WIDTH HEIGHT DEPTH CAMERAMODEL'
 		;;
 		*)
+			# TODO: https://stackoverflow.com/questions/5857820/how-to-get-camera-serial-number-from-exif
 			# TODO: LAT LON ALTITUDE 50.9902585 11.3306255 0
 			# GPSLatitude=50/1, 58/1, 575701/10000
 			# GPSLongitude=11/1, 19/1, 189271/10000
@@ -820,6 +821,7 @@ wait_till_tried_mountaction()	# see: rexxbot3-mountiso-superuser.sh
 
 	while true; do {
 		grep -q ^'done' "$jobfile" && break
+
 		sleep 5
 		log "[OK] waiting: $jobfile"
 	} done
