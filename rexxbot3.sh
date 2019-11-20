@@ -532,12 +532,14 @@ extract_metadata_image_jpeg()		# TODO: https://rfc1149.net/devel/recoverjpeg.htm
 	format='exif_datetime="%[EXIF:DateTime]";exif_gpslat="%[EXIF:GPSLatitude]";exif_gpslon="%[EXIF:GPSLongitude]"'
 	format="$format;width=%[width];height=%[height];depth=%[depth];cameramodel=\"%[EXIF:Model]\""
 
+	# TODO: https://stackoverflow.com/questions/19804768/interpreting-gps-info-of-exif-data-from-photo-in-python
+	# TODO: https://stackoverflow.com/questions/5857820/how-to-get-camera-serial-number-from-exif
+
 	case "$option" in
 		'expected_vars')
 			printf '%s' 'VERSION EXIF_DATETIME EXIF_GPSLAT EXIF_GPSLON WIDTH HEIGHT DEPTH CAMERAMODEL'
 		;;
 		*)
-			# TODO: https://stackoverflow.com/questions/5857820/how-to-get-camera-serial-number-from-exif
 			# TODO: LAT LON ALTITUDE 50.9902585 11.3306255 0
 			# GPSLatitude=50/1, 58/1, 575701/10000
 			# GPSLongitude=11/1, 19/1, 189271/10000
