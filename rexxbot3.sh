@@ -4,13 +4,22 @@ ARG1="$1"	# e.g. directory or 'query' or 'testsuite'
 ARG2="$2"	# in query-mode or testsuite-mode: pattern
 
 ARG1="testdir"
-#ARG2="datei-untertitel-srt"
+#ARG2="datei-untertitel-srt"	# for debugging: only extract 1 specific 'file'
+#ARG2='TGZ-201900788.iso'
 
 TMPDIR='/tmp'
 SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0" )" && pwd -P )"
 case "$*" in *'--debug'*) DEBUG=1 ;; esac
 
 alias explode='set -f;set +f --'
+
+abort()
+{
+	echo "[ERROR] $*"
+	exit 1
+}
+
+command -v 'firejail' || abort "missing 'firejail'"
 
 # ./rexxbot3.sh | mysql --user=root
 # mysql --user=root <test.sql
@@ -628,7 +637,7 @@ extract_metadata_audio()
 
 extract_metadata()	# we can only extract from a non-container-file, e.g. a PDF is a container
 {
-	local file="$1"
+	local file="$1"		# can be <empty> when option='expected_vars'
 	local mime="$2"
 	local option="$3"	# <empty> or 'expected_vars'
 
@@ -671,6 +680,16 @@ extract_metadata()	# we can only extract from a non-container-file, e.g. a PDF i
 		;;
 		'application/x-mach-binary')
 			:
+		;;
+		'application/x-dosexec')
+			[ -f "$file" ] && {
+				cp -v "$file" /tmp/debug.bin
+				chmod 777 /tmp/debug.bin
+
+				log "TODO: https://developers.virustotal.com/reference#file-report"
+			}
+
+			true
 		;;
 		*)
 			log "[...] mime '$mime' not implemented yet"
@@ -792,7 +811,7 @@ scan_dir()
 					*'/mountdir')
 						DIRNAME="$( dirname "$dir" )"
 						CONTAINER="$( readlink "$DIRNAME/symlinked_file" )"
-						JOB="$DIRNAME/mountjob.txt"
+						JOB="$DIRNAME/rexxbot-mountjob.txt"
 
 						[ -f "$JOB" ] && {
 							echo >"$JOB" "unmount $CONTAINER $dir"
@@ -874,8 +893,8 @@ unbox_container()		# TODO: make sure we never emit trash to STDOUT, because that
 			ln -s "$file" "$tempdir/symlinked_file"		# this works also with strange filenames
 			mkdir "$tempdir/mountdir"
 
-			echo >"$tempdir/mountjob.txt" "mount $tempdir/symlinked_file $tempdir/mountdir iso9660"
-			wait_till_tried_mountaction "$tempdir/mountjob.txt"
+			echo >"$tempdir/rexxbot-mountjob.txt" "mount $tempdir/symlinked_file $tempdir/mountdir iso9660"
+			wait_till_tried_mountaction "$tempdir/rexxbot-mountjob.txt"
 
 			tempdir="$tempdir/mountdir"
 		;;
