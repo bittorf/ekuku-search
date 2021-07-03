@@ -19,6 +19,15 @@ abort()
 	exit 1
 }
 
+check_deps()
+{
+	:
+	# file: https://github.com/file/file
+	# ./configure --libdir=/usr/lib/x86_64-linux-gnu
+	# make && make install
+}
+
+
 command -v 'firejail' || abort "missing 'firejail'"
 
 # ./rexxbot3.sh | mysql --user=root
@@ -397,24 +406,18 @@ remove_tmpdir()
 	rm "$file"
 }
 
-file_is_javascript()
+file_is_javascript()		# deps: node
 {
-	# FIXME!
-	# this returns OK if no .js-file and
-	# ERROR if it is a .js file
+	local file="$1"
+	local copy rc
 
-	# this check query-dev without errors
-	# --disable 0001,0005,0011,0131,0200 --nobeep --max_line_length 161
+	copy="$( mktemp --suffix=.js )" || return 1
 
-	local filename="$( basename -- "$file" )"
-	local extension="${filename##*.}"
+	node --check "$copy"
+	rc=$?
+	rm -f "$copy"
 
-	# we enforce a failed check by --max_line_length 1
-	if gjslint --additional_extensions "$extension" --max_line_length 1 "$file" >/dev/null; then
-		false
-	else
-		true
-	fi
+	test $rc -eq 0
 }
 
 file_is_makefile()
@@ -712,7 +715,7 @@ scan_dir()
 	local parent="$2"	# used when unboxing container: TODO: rewrite in database (e.g. archiv.tgz looks like dir)
 	local option="$3"	# e.g. search pattern for DEBUGGING
 
-	local d=0 f=0		# counters
+	local linecount d=0 f=0	# counters
 	local file working_dir line chksum mime container_dir tempfile size ctime varname list value
 
 #	local dirname sha256
@@ -735,7 +738,8 @@ scan_dir()
 		else
 			find "$dir" -xdev                    -exec "$SCRIPTDIR/rexxbot3-string-to-base64.sh" '{}' \; >"$tempfile"
 		fi
-		log "[OK] ready crawling dir '$dir' ($( wc -l "$tempfile" | cut -d' ' -f1 ) entries) - now building chksums and more"
+		linecount="$( wc -l <"$tempfile" )"
+		log "[OK] ready crawling dir '$dir' ($linecount entries) - now building chksums and more"
 	else
 		log "[ERROR] dir not found: '$dir'"
 		return 1
