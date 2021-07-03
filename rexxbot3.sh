@@ -413,7 +413,7 @@ file_is_javascript()		# deps: node
 
 	copy="$( mktemp --suffix=.js )" || return 1
 
-	node --check "$copy"
+	node --check "$copy" 2>/dev/null
 	rc=$?
 	rm -f "$copy"
 
