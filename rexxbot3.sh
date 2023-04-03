@@ -1,16 +1,19 @@
 #!/bin/sh
+# shellcheck shell=dash
+#
+# rexxbot - codename filebot or ekuku-search
 
-ARG1="$1"	# e.g. directory or 'query' or 'testsuite'
+ARG1="$1"	# e.g. directory or 'query' or 'testsuite' - TODO: real parser: 
 ARG2="$2"	# in query-mode or testsuite-mode: pattern
+case "$*" in *'--debug'*) DEBUG=1 ;; esac
 
-ARG1="testdir"
+#ARG1="testdir"
 #ARG2="datei-untertitel-srt"	# for debugging: only extract 1 specific 'file'
 #ARG2='TGZ-201900788.iso'
 
-TMPDIR='/tmp'
+# e.g. /tmp
+TMPDIR="$( mktemp )" && TMPDIR="$( basename -- "$TMPDIR" )" && rm -f "$TMPDIR"
 SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0" )" && pwd -P )"
-case "$*" in *'--debug'*) DEBUG=1 ;; esac
-
 alias explode='set -f;set +f --'
 
 abort()
@@ -25,7 +28,20 @@ check_deps()
 	# file: https://github.com/file/file
 	# ./configure --libdir=/usr/lib/x86_64-linux-gnu
 	# make && make install
+	# base64
+	# sha256sum
+	# GNUfind
+	# losetop or at least support for 'loop'-devices
+	# mkfs.ext2
+	# mysql-server
+	# poppler-utils -> pdfdetach, pdftotext, pdfimages 
+	# unzip
+	# closure-linter (javascript) - gjslint --max_line_length 1 rexxbot3.sh >/dev/null
+
+	# opkg --force-overwrite install findutils-find
+	# opkg install coreutils-base64
 }
+
 
 
 command -v 'firejail' || abort "missing 'firejail'"
@@ -46,6 +62,8 @@ command -v 'firejail' || abort "missing 'firejail'"
 #       - audio:   https://acoustid.org/chromaprint
 # TODO: renaming/detecting TV/movie:
 #       - https://www.filebot.net/
+# TODO: lanuage detection:
+#       - https://github.com/pemistahl/lingua-go
 # TODO: speech recognition:
 #       - https://github.com/mozilla/DeepSpeech
 #       - https://auphonic.com/blog/2016/08/16/speech-recognition-private-beta/
@@ -96,34 +114,19 @@ sandbox()
 	local rc=0
 	local params
 
-	[ ${max_filesize:-0} -lt 1000000 ] && max_filesize=1000000
+	[ "${max_filesize:-0}" -lt 1000000 ] && max_filesize=1000000
 	max_filesize=$(( max_filesize * 2 ))
 
 	shift
 	params="--quiet --shell=/bin/sh --rlimit-fsize=$max_filesize"
 	log "[OK] sandboxed_run: firejail $params $*"
+
+	# shellcheck disable=SC2086
 	firejail $params "$@" || {
 		rc=$?
 		log "[ERROR] sandbox() rc: $rc"
 		return $rc
 	}
-}
-
-check_deps()
-{
-	:
-	# base64
-	# sha256sum
-	# GNUfind
-	# losetop or at least support for 'loop'-devices
-	# mkfs.ext2
-	# mysql-server
-	# poppler-utils -> pdfdetach, pdftotext, pdfimages 
-	# unzip
-	# closure-linter (javascript) - gjslint --max_line_length 1 rexxbot3.sh >/dev/null
-
-	# opkg --force-overwrite install findutils-find
-	# opkg install coreutils-base64
 }
 
 check_dependencies()
@@ -1045,7 +1048,7 @@ unbox_container()		# TODO: make sure we never emit trash to STDOUT, because that
 		;;
 	esac
 
-	[ $rc -eq 0 ] || log "[ERROR] unbox_container: rc $?"
+	[ $rc -eq 0 ] || log "[ERROR] unbox_container: rc $rc"
 	echo "$tempdir"
 	return $rc
 }
