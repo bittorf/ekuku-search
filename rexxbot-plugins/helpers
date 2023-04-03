@@ -108,10 +108,9 @@ json_linebreaks()	# deps: sed, tr
 {
 	local text="$1"
 
-	# linebreaks to \\
-	# we remove all backslashes, otherwise it can lead invalids e.g. \\\
-	printf '%s\n' "$text" | tr -d '\\' | sed ':a;N;$!ba;s/\n/\\\\/g'
-#	printf '%s\n' "$text" | sed -e 's|\\||g' -e ':a;N;$!ba;s/\n/\\\\/g'
+	# linebreaks to literal '\\'
+	# we remove all backslashes, otherwise it can lead to invalides e.g. \\\
+	printf '%s\n' "$text" | tr -d "\\" | sed ':a;N;$!ba;s/\n/\\\\/g'
 }
 
 			# deps: sed

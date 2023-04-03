@@ -40,6 +40,7 @@ include_plugins()
 {
 	local file
 
+	# shellcheck disable=SC1091
 	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
 }
 
