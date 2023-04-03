@@ -29,27 +29,12 @@ Usage:	$0 <action> <option1> <option2>
 EOF
 }
 
-log()
+include_plugins()
 {
-	local message="$1"
-	local prio="$2"		# e.g. debug
+	local file
 
-	test -z "$DEBUG" -a "$prio" = 'debug' && return 0
-	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
-}
-
-function_files_get()
-{
-	local scriptdir
-
-	scriptdir="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
-	printf '%s\n' "$scriptdir/rexxbot-plugins/"*
-}
-
-function_files_include()
-{
-	# shellcheck disable=SC1091
-	for _ in $( function_files_get ); do . "$_"; done
+	export SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
+	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
 }
 
 # === loop1 | fastscan === TODO: versions of files.txt
@@ -120,7 +105,17 @@ loop2_mime_and_sha256()		# deps: test
 	} done
 }
 
-function_files_include
+json_check_or_die()
+{
+	local file="$1"
+
+	jq . <"$file" >/dev/null || {
+		log "jq-error:$? file: $file #############"
+		exit 1
+	}
+}
+
+include_plugins
 
 case "$ACTION" in
 	table_drop)
@@ -219,12 +214,13 @@ case "$ACTION" in
 		} done
 	;;
 	mime)
-		# mimetype_get "$ARG1"
 		MIME="$( mimetype_get "$ARG1" )"
+
 		MIMEPRE="${MIME%/*}"
 		MIMESUB="${MIME#*/}"	# unused
+		JSON="$( mktemp )" || exit 1
 
-		log "detected: $MIME (pre: $MIMEPRE sub: $MIMESUB) -> $ARG1"
+		log "detected: $MIME (pre: $MIMEPRE sub: $MIMESUB) -> $ARG1" debug
 
 		case "$MIMEPRE" in
 			image)
@@ -243,11 +239,20 @@ case "$ACTION" in
 
 		# deps: jq
 		if LC_ALL=C command -v "$funcname_meta" >/dev/null; then
-			echo "# file: '$ARG1'"
-			$funcname_meta    "$ARG1" >/tmp/T
-			cat /tmp/T
-			jq . </tmp/T >/dev/null || { echo "jq-error:$? #############" && exit; }
-			$funcname_preview "$ARG1"
+			echo "{"
+			echo "  \"filename\": \"$ARG1\""	# jsonsafe?
+			echo "  \"mime\": \"$MIME\""
+			echo "}"
+
+			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
+			$funcname_meta "$ARG1" >"$JSON"
+			cat "$JSON"
+			json_check_or_die "$JSON"
+
+			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_preview '$ARG1'" debug
+			$funcname_preview "$ARG1" >"$JSON"
+			cat "$JSON"
+			json_check_or_die "$JSON" && rm -f "$JSON"
 		else
 			log "missing: $MIME -> $funcname_meta | $ARG1"
 		fi

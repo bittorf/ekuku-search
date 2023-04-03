@@ -41,7 +41,8 @@ json_out_preview_image()
 preview_get_image()	# deps: convert, base64
 {
 	local file="$1"
-	local format='avif'
+
+	local format='avif'		# see: https://en.wikipedia.org/wiki/AVIF
 	local x=256
 	local y=256
 	local resize="${x}x${y}>"	# dont enlarge images smaller than X*Y
@@ -96,6 +97,7 @@ metadata_get_image()	# deps: identify
 	local latitude longitude altitude lat lon alt
 	local unix date1 date2 date3 date4 date5 date6
 
+	# build printf-like output string for 'identify':
 	format="width=%[width];height=%[height];depth=%[depth];colors=%k;"
 	format="${format}date1='%[date:create]';"
 	format="${format}date2='%[date:modify]';"
@@ -108,6 +110,8 @@ metadata_get_image()	# deps: identify
 	format="${format}latitude='%[EXIF:GPSLatitude] %[EXIF:GPSLatitudeRef]';"
 	format="${format}longitude='%[EXIF:GPSLongitude] %[EXIF:GPSLongitudeRef]';"
 	format="${format}altitude='%[EXIF:GPSAltitude] %[EXIF:GPSAltitudeRef]';"
+
+	log "format: $format" debug
 
 	# gif + apng
 	# animations are tricky! TODO: enforce a new mimetype, e.g. video/gif?

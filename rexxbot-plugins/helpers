@@ -16,7 +16,11 @@ alias explode='set -f;set +f --'
 
 log()
 {
-	>&2 printf '%s\n' "$1"
+	local message="$1"
+	local prio="$2"		# e.g. debug or <empty>
+
+	test -z "$DEBUG" -a "$prio" = debug && return
+	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
 }
 
 dev_upload()
