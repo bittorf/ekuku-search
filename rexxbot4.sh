@@ -257,20 +257,24 @@ case "$ACTION" in
 
 		# deps: jq
 		if LC_ALL=C command -v "$funcname_meta" >/dev/null; then
+			RC=0
+
 			echo "{"
 			echo "  \"filename\": \"$ARG1\""	# jsonsafe?
 			echo "  \"mime\": \"$MIME\""
 			echo "}"
 
 			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
-			$funcname_meta "$ARG1" >"$JSON"
+			$funcname_meta "$ARG1" >"$JSON" || RC=$?
 			cat "$JSON"
 			json_check_or_die "$JSON"
 
 			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_preview '$ARG1'" debug
-			$funcname_preview "$ARG1" >"$JSON"
+			$funcname_preview "$ARG1" >"$JSON" || RC=$?
 			cat "$JSON"
 			json_check_or_die "$JSON" && rm -f "$JSON"
+
+			test "$RC" = 0
 		else
 			log "missing: $MIME -> $funcname_meta | $ARG1"
 		fi

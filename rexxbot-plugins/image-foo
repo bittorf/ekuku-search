@@ -52,11 +52,12 @@ preview_get_image()	# deps: convert, base64, ufraw-batch
 	b64="$( convert "$file"[0] -quality "$quality" -resize "$resize" $format:- | base64 -w0 )"
 	[ -z "$b64" ] && {
 		# repeat it:
+		log "convert '$file'[0] -quality $quality -resize $resize $format:-"
 		convert "$file"[0] -quality "$quality" -resize "$resize" $format:- >/dev/null 2>/dev/null
 		log "error during convert $?"
 	}
 
-	json_out_preview_image "$format" "$x" "$y" "${#b64}" "$b64"
+	json_out_preview_image "$format" "$x" "$y" "${#b64}" "$b64" && test -n "$b64"
 }
 
 image_hash_get()
