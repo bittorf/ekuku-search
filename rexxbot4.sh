@@ -29,11 +29,17 @@ Usage:	$0 <action> <option1> <option2>
 EOF
 }
 
+SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
+
+function_files_get()
+{
+	find "$SCRIPTDIR/rexxbot-plugins" -type f
+}
+
 include_plugins()
 {
 	local file
 
-	export SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
 	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
 }
 
@@ -257,9 +263,6 @@ case "$ACTION" in
 			log "missing: $MIME -> $funcname_meta | $ARG1"
 		fi
 	;;
-	depspre)
-		dependencies_get
-	;;
 	deps)
 		dependencies_check "$ARG1"
 	;;
@@ -268,9 +271,6 @@ case "$ACTION" in
 	;;
 	dev_upload)
 		dev_upload
-	;;
-	foo)
-		json_keyvalue "foo" '' last
 	;;
 	*)
 		usage && false

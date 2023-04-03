@@ -176,7 +176,7 @@ date_get_oldest()		# deps: date, test
 		esac
 
 		unix="$( date --date "$date" +%s )" || continue
-		test "$unix" -lt $unix_min && unix_min="$unix"
+		test "$unix" -lt "$unix_min" && unix_min="$unix"
 	} done
 
 	printf '%s\n' "$unix_min"

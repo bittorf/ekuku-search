@@ -54,14 +54,15 @@ db_query()	# deps: psql
 {
 	local command="$1"
 	local human="$2"	# <empty> or 'human'
-	local opt
 
 	case "$human" in
-		true|human*) opt= ;;
-		*) opt='--no-align --tuples-only' ;;
+		true|human*)
+			psql --quiet -h localhost -U bastian --dbname=rexxbot                          -P pager=off -c "$command"
+		;;
+		*)
+			psql --quiet -h localhost -U bastian --dbname=rexxbot --no-align --tuples-only -P pager=off -c "$command"
+		;;
 	esac
-
-	psql --quiet -h localhost -U bastian --dbname=rexxbot $opt -P pager=off -c "$command"
 }
 
 db_fetch_nextfile_without_sha256()	# mark as 'queued', returns ID
@@ -99,7 +100,7 @@ db_insert_meta_and_preview()
 
 	# this works around path/filenames with single quotes:
 	# https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
-	local q='$singlequotes$'
+	local q="\$singlequotes\$"
 
 	db_query "
 UPDATE metadata SET
@@ -116,7 +117,7 @@ db_insert_mime_and_sha256()	# when output is empty,
 	local sha256="$3"
 
 	local mimeapi_version='1'
-	local delimiter='$anonblock$'
+	local delimiter="\$anonblock\$"
 
 	db_query "
 UPDATE objects SET
@@ -137,7 +138,7 @@ RETURNING id;
 pump_into_db()	# deps: psql
 {
 	if [ "$ARG2" = debug ]; then
-		while read -r LINE; do echo $LINE; done
+		while read -r LINE; do printf '%s\n' "$LINE"; done
 	else
 		psql --quiet -h localhost -U bastian --dbname=rexxbot
 	fi
@@ -153,11 +154,11 @@ findoutput_to_sqlcommands()	# e.g. find /foo -printf 'type: %y mtime: %TF %TT di
 	local pathname='%p'
 	local sha256=NULL
 	local tablename='objects'
-	local delimiter='$anonblock$'
+	local delimiter="\$anonblock\$"
 
 	# this works around path/filenames with single quotes:
 	# https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
-	local q='$singlequotes$'
+	local q="\$singlequotes\$"
 
 	# https://www.postgresql.org/docs/current/sql-do.html
 	cat <<EOF
