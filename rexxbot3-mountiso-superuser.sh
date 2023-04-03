@@ -8,7 +8,7 @@
 
 log()
 {
-	>&2 printf '%s\n' "$1"
+	>&2 printf '%s\n' "$( LC_ALL=C date ) | $1"
 }
 
 mktemp_get_prefix()

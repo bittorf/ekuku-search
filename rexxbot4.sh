@@ -9,7 +9,7 @@ usage()
 {
 	cat <<EOF
 
-=== file_cabinet / rexxbot / ekukubot ===
+=== file_cabinet / rexxbot / ekukubot / filebot / ekuku-search ===
 
 Usage:	$0 <action> <option1> <option2>
 
