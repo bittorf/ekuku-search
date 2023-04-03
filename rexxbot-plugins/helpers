@@ -23,25 +23,6 @@ log()
 	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
 }
 
-dev_upload()
-{
-	log "to: 10.63.22.98  | ~/software/rexxbot3/rexxbot4.sh"
-	scp rexxbot4.sh       10.63.22.98:software/rexxbot3/
-	ssh                   10.63.22.98 "mkdir -p ~/software/rexxbot3/rexxbot-plugins"
-	scp rexxbot-plugins/* 10.63.22.98:software/rexxbot3/rexxbot-plugins
-
-	log "to: 10.63.22.102 | ~/software/rexxbot3/rexxbot4.sh"
-	scp rexxbot4.sh       10.63.22.102:software/rexxbot3/
-	ssh                   10.63.22.102 "mkdir -p ~/software/rexxbot3/rexxbot-plugins"
-	scp rexxbot-plugins/* 10.63.22.102:software/rexxbot3/rexxbot-plugins
-
-	log "to: 10.63.22.97 | /tmp/rexxbot4.sh"
-	ssh-copy-id            root@10.63.22.97
-	scp rexxbot4.sh        root@10.63.22.97:/tmp
-	ssh                    root@10.63.22.97 "mkdir -p /tmp/rexxbot-plugins"
-	scp rexxbot-plugins/*  root@10.63.22.97:/tmp/rexxbot-plugins
-}
-
 check_code()
 {
 	local file temp

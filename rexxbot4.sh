@@ -22,9 +22,9 @@ Usage:	$0 <action> <option1> <option2>
 	$0 table_show_meta
 	$0 atomic
 	$0 mime <file>
-	$0 deps missing_only
 
-	$0 <check_code|dev_upload>
+	$0 check_deps
+	$0 check_code
 
 EOF
 }
@@ -264,14 +264,11 @@ case "$ACTION" in
 			log "missing: $MIME -> $funcname_meta | $ARG1"
 		fi
 	;;
-	deps)
+	check_deps)
 		dependencies_check "$ARG1"
 	;;
 	check_code)
 		check_code
-	;;
-	dev_upload)
-		dev_upload
 	;;
 	*)
 		usage && false
