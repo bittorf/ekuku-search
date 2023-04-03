@@ -1,0 +1,199 @@
+#!/bin/sh
+#
+# explode
+# log()
+# check_code()
+# debug_activated()
+# round_to_integer()
+# is_number()
+# json_keyvalue()
+# date_get_oldest()
+# mimetype_get()
+# sha256_get()
+
+
+alias explode='set -f;set +f --'
+
+log()
+{
+	>&2 printf '%s\n' "$1"
+}
+
+dev_upload()
+{
+	log "to: 10.63.22.98  | ~/software/rexxbot3/rexxbot4.sh"
+	scp rexxbot4.sh       10.63.22.98:software/rexxbot3/
+	ssh                   10.63.22.98 "mkdir -p ~/software/rexxbot3/rexxbot-plugins"
+	scp rexxbot-plugins/* 10.63.22.98:software/rexxbot3/rexxbot-plugins
+
+	log "to: 10.63.22.102 | ~/software/rexxbot3/rexxbot4.sh"
+	scp rexxbot4.sh       10.63.22.102:software/rexxbot3/
+	ssh                   10.63.22.102 "mkdir -p ~/software/rexxbot3/rexxbot-plugins"
+	scp rexxbot-plugins/* 10.63.22.102:software/rexxbot3/rexxbot-plugins
+
+	log "to: 10.63.22.97 | /tmp/rexxbot4.sh"
+	ssh-copy-id            root@10.63.22.97
+	scp rexxbot4.sh        root@10.63.22.97:/tmp
+	ssh                    root@10.63.22.97 "mkdir -p /tmp/rexxbot-plugins"
+	scp rexxbot-plugins/*  root@10.63.22.97:/tmp/rexxbot-plugins
+}
+
+check_code()
+{
+	local file temp
+
+	temp="$( mktemp )"
+	
+	for file in "$0" $( function_files_get ); do {
+		log "[OK] building all-in-one: $file"
+		cat "$file" && echo
+	} done >"$temp"
+
+	shellcheck --shell=dash "$temp"
+	rm "$temp"
+}
+
+debug_activated()
+{
+	case "$DEBUG" in '') false ;; *) true ;; esac
+}
+
+round_to_integer()	# e.g. 3.5 -> 4 or 3.4 -> 3
+{
+	LC_ALL=C printf '%0.f' "$1"
+}
+
+is_number()	# for N in -12 -12.33 -.33 12.33 .33 12345; do echo "A: $(is_number "$N"; echo $?)"; done
+{
+	local input="$1"
+
+	case "$input" in
+		''|*[!0-9.-]*)
+			return 1
+		;;
+	esac
+
+	case "$input" in
+		'--'*) return 1 ;;
+		'-'*) ;;
+		*'-'*) return 1 ;;
+	esac
+
+	case "$input" in
+		*'.'*'.'*) return 1 ;;
+	esac
+
+	case "$input" in
+		*[a-zA-Z]*|*'[ <>]'*) false ;;
+		*)
+			case "$input" in
+				-[0-9]) ;;		# -1
+				-[0-9][0-9]*) ;;	# -12
+				-[0-9]*.[0-9]*) ;;	# -12.33
+				-.[0-9]*) ;;		# -.33
+				 [0-9]*.[0-9]*) ;;	# 12.33
+				 .[0-9]*) ;;		# .33
+				 [0-9]*) ;;		# 12345
+				*) false ;;
+			esac
+		;;
+	esac
+}
+
+json_linebreaks()	# deps: sed, tr
+{
+	local text="$1"
+
+	# linebreaks to \\
+	# we remove all backslashes, otherwise it can lead invalids e.g. \\\
+	printf '%s\n' "$text" | tr -d '\\' | sed ':a;N;$!ba;s/\n/\\\\/g'
+#	printf '%s\n' "$text" | sed -e 's|\\||g' -e ':a;N;$!ba;s/\n/\\\\/g'
+}
+
+			# deps: sed
+json_keyvalue()		# we omit/autoignore 'null' values
+{
+	local key="$1"
+	local value="$2"
+	local option="$3"
+	local optarg="$4"
+	local comma=','
+	local linebreak="
+"
+	case "$option" in
+		'last') comma= ;;	# important: dont ignore, even when <empty> / null
+		'ignore')
+			case  "$optarg" in "$value") return 0 ;; esac
+			case -"$optarg" in "$value") return 0 ;; esac
+		;;
+	esac
+
+	case "$value" in
+		'') case "$option" in last) ;; *) debug_activated || return 0 ;; esac
+	esac
+
+	if is_number "$value"; then
+		case "$value" in
+			.*) value="0$value" ;;		# .9 -> 0.9
+		esac
+
+		# e.g. "key": value,
+		printf '%s\n' "  \"$key\": ${value:-null}${comma}"
+	else
+		case "$value" in
+			*"$linebreak"*) value="$( json_linebreaks "$value" )" ;;
+		esac
+
+		# e.g. "key": "value with\" inside"
+		case "$value" in
+			*'"'*) value="$( printf '%s\n' "$value" | sed 's/"/\\"/g' )" ;;
+		esac
+
+		# e.g. "key": "value",
+		printf '%s\n' "  \"$key\": ${value:+\"}${value:-null}${value:+\"}${comma}"
+	fi
+}
+
+date_get_oldest()		# deps: date, test
+{
+	local date unix y m rest
+	local unix_min=2147483647	# 2^32-1
+
+	for date in "$@"; do {				# e.g. 2017:03:23 12:41:46
+		case "$date" in				#      2019-03-01T12:31:02+00:00
+			[1-9][0-9][0-9][0-9]:*)
+				# e.g. 2017:03:23 12:41:46
+				y="${date%%:*}"		# 2017
+				rest="${date#*:}"	# 03:23 12:41:46
+				m="${rest%%:*}"		# 03
+				rest="${rest#???}"	# 23 12:41:46
+				date="$y-$m-$rest"
+			;;
+		esac
+
+		unix="$( date --date "$date" +%s )" || continue
+		test "$unix" -lt $unix_min && unix_min="$unix"
+	} done
+
+	printf '%s\n' "$unix_min"
+}
+
+mimetype_get()	# deps: file
+{
+	local file="$1"
+
+	# e.g. application/vnd.openxmlformats-officedocument.wordprocessingml.document
+	# e.g. image/jpeg
+	# e.g. audio/x-wav
+	# e.g. video/x-m4v
+
+	# https://developer.mozilla.org/en-US/docs/Web/HTTP/Basics_of_HTTP/MIME_types	
+	file --mime-type --brief "$file"
+}
+
+sha256_get()	# deps: sha256sum, cut
+{
+	local file="$1"
+
+	sha256sum <"$file" | cut -d' ' -f1
+}

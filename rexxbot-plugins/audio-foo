@@ -1,0 +1,167 @@
+#!/bin/sh
+#
+# ideas:
+# speech2text: https://github.com/mozilla/DeepSpeech/releases/tag/v0.9.3
+#              https://github.com/AASHISHAG/deepspeech-german
+#
+# TODO: has_cover = true
+# TODO: several streams in 1 audiofile?
+# TODO: several images in 1 audiofile: https://en.wikipedia.org/wiki/Enhanced_podcast
+#				       https://stackoverflow.com/questions/13592709/retrieve-album-art-using-ffmpeg
+# TODO: subtitles? stream types: v, a, s, d, t
+
+json_out_audio()
+{
+	printf '%s\n' '{'
+	json_keyvalue 'rc'             "$1" ignore 0
+	json_keyvalue 'codec'          "$2"
+	json_keyvalue 'duration'       "$3" ignore 0
+	json_keyvalue 'duration_real'  "$4" ignore 0
+	json_keyvalue 'channels'       "$5"
+	json_keyvalue 'layout'         "$6"
+	json_keyvalue 'bits'           "$7"
+	json_keyvalue 'samplerate'     "$8"
+	json_keyvalue 'bitrate_eff'    "$9"
+	json_keyvalue 'bitrate_real' "${10}" ignore 0
+	json_keyvalue 'compression'  "${11}"
+	json_keyvalue 'fingerprint'  "${12}"
+	json_keyvalue 'title'        "${13}"
+	json_keyvalue 'artist'       "${14}"
+	json_keyvalue 'album'        "${15}"
+	json_keyvalue 'genre'        "${16}"
+	json_keyvalue 'comment'      "${17}"
+	json_keyvalue 'publisher'    "${18}"
+	json_keyvalue 'date'         "${19}"
+	json_keyvalue 'chapters'     "${20}" ignore 0
+	json_keyvalue 'chapter_list' "${21}"
+	json_keyvalue 'streams'      "${22}" ignore 1		# TODO: extract cover?
+	json_keyvalue 'api'          "${23}" last
+	printf '%s\n' '}'
+
+	case "$1" in 0) ;; *) false ;; esac
+}
+
+json_out_preview_audio()
+{
+	printf '%s\n' '{'
+	json_keyvalue 'format' "$1"
+	json_keyvalue 'x'      "$2"
+	json_keyvalue 'y'      "$3"
+	json_keyvalue 'size'   "$4"
+	json_keyvalue 'data'   "$5" last
+	printf '%s\n' '}'
+}
+			# deps: ffmpeg, base64
+preview_get_audio()	# 30 sec opus minimal?
+{
+	local file="$1"
+	local format='webp'
+	local x=512
+	local y=256
+	local dimension="${x}x${y}"
+	local b64
+
+	# TODO: detect errors
+	b64="$( AV_LOG_FORCE_NOCOLOR=y ffmpeg -v error \
+		-i "$file" \
+		-filter_complex "showwavespic=s=${dimension}:split_channels=1" \
+		-frames:v 1 \
+		-f "$format" - 2>/dev/null | base64 -w0 )"
+
+	json_out_preview_audio "$format" "$x" "$y" "${#b64}" "$b64"
+}
+
+probe()		# deps: ffprobe
+{
+	local file="$1"
+
+	# ffprobe -show_format -of flat
+	ffprobe -v error \
+		-show_format -of flat=sep_char=_:hierarchical=0 \
+		-show_chapters \
+		-show_entries format_tags="$tags" \
+		-show_entries stream="$format" \
+		-select_streams a "$file" || \
+			printf '%s\n' "rc=$?"
+}
+
+simulate_play()		# deps: ffmpeg
+{
+	local file="$1"
+
+	AV_LOG_FORCE_NOCOLOR=y ffmpeg -nostdin -hide_banner -nostats -loglevel info \
+		-i "$file" \
+		-f null \
+		-c copy - 2>&1
+}
+
+			# deps: sed
+timestamp_explode()
+{
+	# e.g. frame=1 fps=0.0 q=-1.0 Lsize=N/A time=00:10:54.42 bitrate=N/A speed=2.1e+03x
+	# e.g. time=00:10:54.42 -> 00 10 54
+	echo "$1" | sed -n "s/^.*time=\([0-9][0-9]\):\([0-9][0-9]\):\([0-9][0-9]\)\.\([0-9][0-9]\).*$/\1 \2 \3 \4/p"
+}
+
+				# deps: fpcalc, bc, sed
+metadata_get_audio()
+{
+	local file="$1"
+
+	local api_version=1
+	local rc=0
+
+	local format='codec_name,sample_rate,channels,channel_layout,sample_fmt,duration'
+	local tags='title,artist,album,genre,comment,publisher,date,TIT3'
+	local bitrate_eff bitrate_real compression fingerprint
+	local bits_per_sample line duration_real chapter c=0
+
+	local sample_fmt nb_streams sample_rate size sample_rate channels
+	local codec_name channel_layout tags_title tags_TIT3 tags_date
+	local tags_artist tags_album tags_genre tags_comment tags_publisher
+
+	# shellcheck disable=SC2016,SC2046
+	eval $( probe "$file" | sed  -e 's/^chapter_[0-9]*_tags_title="/c=$((c+1));chapter="${chapter}${chapter:+;}/' \
+					-e 's/format_//' \
+					-e 's/stream_0_//' \
+					-e 's/^/local /' )
+
+	line="$( simulate_play "$file" | tail -n2 )"
+	# shellcheck disable=SC2046
+	set -- $( timestamp_explode "$line" )
+	duration_real="$( printf '%s\n' "scale=2; $1*3600 + $2*60 + $3 + $4/100" | bc -l )"
+
+	# https://ffmpeg.org/doxygen/3.1/group__lavu__sampfmts.html
+	# http://man.hubwiz.com/docset/FFmpeg.docset/Contents/Resources/Documents/api/samplefmt_8c.html
+	case "$bits_per_sample" in
+		''|0)
+			case "$sample_fmt" in
+				u8|u8p) bits_per_sample=8 ;;
+				s16|s16p) bits_per_sample=16 ;;
+				s32|flt|s32p|fltp) bits_per_sample=32 ;;
+				s64|dbl|s64p|dblp) bits_per_sample=64 ;;
+			esac
+		;;
+	esac
+
+	# this is maybe unneeded:
+	bitrate_eff="$( printf '%s\n' "scale=0; ($size*8) / ${duration_real:-$duration}" | bc -l )"
+	bitrate_real="$(( sample_rate * channels * bits_per_sample ))"
+	compression="$( printf '%s\n' "scale=1; $bitrate_real / $bitrate_eff" | bc -l )"
+
+	# TODO: support for all format, e.g. sox input.foo --type wav - | fpcalc -plain -
+	# does not work for very short files (empty output)
+	fingerprint="$( fpcalc -plain "$file" 2>/dev/null )"
+
+	duration="$(      round_to_integer "$duration"      )"
+	duration_real="$( round_to_integer "$duration_real" )"
+
+	json_out_audio	"$rc" "$codec_name" "$duration" "$duration_real" \
+			"$channels" "$channel_layout" "$bits_per_sample" \
+			"$sample_rate" "${bitrate_eff:-$bit_rate}" \
+			"$bitrate_real" "$compression" "$fingerprint" \
+			"$tags_title${tags_TIT3:+ }${tags_TIT3}" \
+			"$tags_artist" "$tags_album" "$tags_genre" \
+			"$tags_comment" "$tags_publisher" "$tags_date" \
+			"$c" "$chapter" "$nb_streams" "$api_version"
+}

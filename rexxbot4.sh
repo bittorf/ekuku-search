@@ -29,6 +29,15 @@ Usage:	$0 <action> <option1> <option2>
 EOF
 }
 
+log()
+{
+	local message="$1"
+	local prio="$2"		# e.g. debug
+
+	test -z "$DEBUG" -a "$prio" = 'debug' && return 0
+	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
+}
+
 function_files_get()
 {
 	local scriptdir
@@ -215,7 +224,7 @@ case "$ACTION" in
 		MIMEPRE="${MIME%/*}"
 		MIMESUB="${MIME#*/}"	# unused
 
-		echo "detected: $MIME (pre: $MIMEPRE sub: $MIMESUB) -> $ARG1" >>T
+		log "detected: $MIME (pre: $MIMEPRE sub: $MIMESUB) -> $ARG1"
 
 		case "$MIMEPRE" in
 			image)
@@ -227,10 +236,8 @@ case "$ACTION" in
 				funcname_preview="preview_get_${MIMEPRE}"
 			;;
 			*)
-				exit 0
-
-				# funcname_meta="metadata_get_${MIMEPRE}_${MIMESUB}"
-				# funcname_preview="preview_get_${MIMEPRE}_${MIMESUB}"
+				funcname_meta="metadata_get_${MIMEPRE}_${MIMESUB}"
+				funcname_preview="preview_get_${MIMEPRE}_${MIMESUB}"
 			;;
 		esac
 
@@ -242,7 +249,7 @@ case "$ACTION" in
 			jq . </tmp/T >/dev/null || { echo "jq-error:$? #############" && exit; }
 			$funcname_preview "$ARG1"
 		else
-			echo "missing: $MIME -> $funcname_meta | $file" >>T
+			log "missing: $MIME -> $funcname_meta | $ARG1"
 		fi
 	;;
 	depspre)

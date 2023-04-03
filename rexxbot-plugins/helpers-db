@@ -1,0 +1,175 @@
+#!/bin/sh
+#
+# prepare_db()
+# db_query()
+# db_select_nextfile_without_mime_and_sha_atomic()
+# db_select_file_from_id()
+# db_select_nextfile_without_mime()
+# db_insert_mime_and_sha256()
+# findoutput_to_sqlcommands()
+
+
+prepare_db()
+{
+	# [type,mtime,size,boxfmt,dirname,basename,sha256]
+	#
+	# https://www.postgresqltutorial.com/postgresql-create-table/
+	# https://www.postgresql.org/docs/current/datatype.html
+
+	# column   | looks like e.g.:
+	# ---------+---------------------------------
+	# id       | 2506723
+	# type     | f (f=file, d=dir, l=link, s=socket, p=pipe, c=chardev?, b=blockdev, L=loop, N=nonexistent, ? = wont happen)
+	# mtime    | 1555443756.9321673270 [21 chars]
+	# dirname  | /tank/foo/bla
+	# basename | myfiles.txt.rar
+	# size     | 2179008276480
+	# mime     | text/plain
+	# sha256   | ...64bytes...
+
+	cat <<EOF
+SET client_min_messages = error;
+CREATE TABLE IF NOT EXISTS objects (
+  id       BIGSERIAL PRIMARY KEY,
+  type     VARCHAR (1),
+  mtime    TIMESTAMP,
+  dirname  VARCHAR (1024),
+  basename VARCHAR (512),
+  size     BIGINT, 
+  sha256   VARCHAR (64)
+);
+
+CREATE TABLE IF NOT EXISTS metadata (
+  id       BIGSERIAL PRIMARY KEY,
+  mime     VARCHAR (255),
+  Vmime    INT,
+  sha256   VARCHAR (64) UNIQUE,
+  data     JSONB,
+  preview  JSONB
+);
+EOF
+}
+
+db_query()	# deps: psql
+{
+	local command="$1"
+	local human="$2"	# <empty> or 'human'
+	local opt
+
+	case "$human" in
+		true|human*) opt= ;;
+		*) opt='--no-align --tuples-only' ;;
+	esac
+
+	psql --quiet -h localhost -U bastian --dbname=rexxbot $opt -P pager=off -c "$command"
+}
+
+db_fetch_nextfile_without_sha256()	# mark as 'queued', returns ID
+{
+	db_query "
+UPDATE objects SET
+  sha256 = 'queued'
+WHERE id IN (
+  SELECT id FROM objects WHERE
+    type = 'f' AND
+    sha256 IS NULL
+  LIMIT 1 FOR UPDATE
+)
+RETURNING id;
+"
+}
+
+db_select_file_from_id()
+{
+	local id="$1"
+
+	db_query "SELECT dirname||'/'||basename FROM objects WHERE id = $id"
+}
+
+db_select_nextfile_without_mime()
+{
+	db_query "SELECT dirname||'/'||basename FROM objects WHERE type = 'f' AND ( vmime < 2 or vmime IS NULL ) LIMIT 1"
+}
+
+db_insert_meta_and_preview()
+{
+	local sha256="$1"
+	local json_metadata="$2"
+	local json_preview="$3"
+
+	# this works around path/filenames with single quotes:
+	# https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
+	local q='$singlequotes$'
+
+	db_query "
+UPDATE metadata SET
+  data = ${q}${json_metadata}${q},
+  preview = ${q}${json_preview}${q}
+WHERE sha256 = '$sha256';
+"
+}
+
+db_insert_mime_and_sha256()	# when output is empty,
+{				# metadata-table for sha256 is already filled
+	local id="$1"
+	local mime="$2"
+	local sha256="$3"
+
+	local mimeapi_version='1'
+	local delimiter='$anonblock$'
+
+	db_query "
+UPDATE objects SET
+  sha256 = '$sha256'
+WHERE id = $id;
+"
+	# does exist already?
+	# if not not: query ALL metadata
+	db_query "
+INSERT INTO metadata (mime, Vmime, sha256)
+  VALUES ('$mime', '$mimeapi_version', '$sha256')
+ON CONFLICT (sha256)
+  DO NOTHING
+RETURNING id;
+"
+}
+
+pump_into_db()	# deps: psql
+{
+	if [ "$ARG2" = debug ]; then
+		while read -r LINE; do echo $LINE; done
+	else
+		psql --quiet -h localhost -U bastian --dbname=rexxbot
+	fi
+}
+				# deps: cat
+findoutput_to_sqlcommands()	# e.g. find /foo -printf 'type: %y mtime: %TF %TT dir: %h base: %f path: %p'
+{
+	local type='%y'
+	local mtime='%TF %TT'
+	local size='%s'
+	local dirname='%h'
+	local basename='%f'
+	local pathname='%p'
+	local sha256=NULL
+	local tablename='objects'
+	local delimiter='$anonblock$'
+
+	# this works around path/filenames with single quotes:
+	# https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-DOLLAR-QUOTING
+	local q='$singlequotes$'
+
+	# https://www.postgresql.org/docs/current/sql-do.html
+	cat <<EOF
+DO $delimiter
+BEGIN
+  IF '$type' = 'd' THEN
+      INSERT INTO $tablename (type, mtime, dirname)
+      VALUES ('$type', '$mtime', ${q}${pathname}${q});
+  ELSE
+      INSERT INTO $tablename (type, mtime, dirname, basename, size, sha256)
+      VALUES ('$type', '$mtime', ${q}${dirname}${q}, ${q}${basename}${q}, $size, $sha256);
+  END IF;
+END $delimiter;
+EOF
+}

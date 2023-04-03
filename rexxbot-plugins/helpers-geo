@@ -1,0 +1,71 @@
+#!/bin/sh
+#
+# normalize_latitude()
+# normalize_longitude()
+# normalize_altitude()
+
+normalize_latitude()
+{
+	local input="$1"	# e.g. degrees, minutes, seconds REF
+	local sign		#      54/1, 5/1, 3580/100 N
+				#      (55) (40.711) (0) S
+	case "$input" in
+		*s|*S) sign='-' ;;
+	esac
+
+	case "$input" in
+		*[0-9]/[0-9]*,*)
+			explode $input
+			printf '%s' "$sign"
+			printf '%s\n' "scale=4; ${1%,*} + (${2%,*})/60 + (${3%,*})/3600" | bc -l
+		;;
+		' ')
+			printf '%s\n' ''
+		;;
+		*)
+			printf '%s\n' "$1"
+		;;
+	esac
+}
+
+normalize_longitude()		# deps: bc
+{
+	local input="$1"	# e.g. degrees, minutes, seconds REF
+	local sign		#      54/1, 5/1, 3580/100 W
+				#      (55) (40.711) (0) e
+	case "$input" in
+		*w|*W) sign='-' ;;
+	esac
+
+	case "$input" in
+		*[0-9]/[0-9]*,*)
+			explode $input
+			printf '%s' "$sign"
+			printf '%s\n' "scale=4; ${1%,*} + (${2%,*})/60 + (${3%,*})/3600" | bc -l
+		;;
+		' ')
+			printf '%s\n' ''
+		;;
+		*)
+			printf '%s\n' "$1"
+		;;
+	esac
+}
+
+normalize_altitude()		# deps: bc
+{
+	local input="$1"	# e.g. 8959/1073 0
+
+	case "$input" in
+		*[0-9]/[0-9]*)
+			explode $input
+			printf '%s\n' "scale=0; $1" | bc -l
+		;;
+		' ')
+			printf '%s\n' ''
+		;;
+		*)
+			printf '%s\n' "$1"
+		;;
+	esac
+}

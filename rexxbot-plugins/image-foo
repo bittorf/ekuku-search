@@ -1,0 +1,135 @@
+#!/bin/sh
+#
+# TODO:
+# https://de.wikipedia.org/wiki/IPTC-IIM-Standard
+# https://exiv2.org/makernote.html
+
+
+json_out_image()
+{
+	printf '%s\n' '{'
+	json_keyvalue 'rc'      "$1" ignore 0
+	json_keyvalue 'x'       "$2"
+	json_keyvalue 'y'       "$3"
+	json_keyvalue 'depth'   "$4"
+	json_keyvalue 'colors'  "$5"
+	json_keyvalue 'frames'  "$6" ignore '1'
+	json_keyvalue 'unix'    "$7"
+	json_keyvalue 'lens'    "$8"
+	json_keyvalue 'lat'     "$9" ignore 0
+	json_keyvalue 'lon'   "${10}" ignore 0
+	json_keyvalue 'alt'   "${11}" ignore 0
+	json_keyvalue 'text'  "${12}"
+	json_keyvalue 'phash' "${13}"
+	json_keyvalue 'api'   "${14}" last
+	printf '%s\n' '}'
+
+	case "$1" in 0) ;; *) false ;; esac
+}
+
+json_out_preview_image()
+{
+	printf '%s\n' '{'
+	json_keyvalue 'format' "$1"
+	json_keyvalue 'x'      "$2"
+	json_keyvalue 'y'      "$3"
+	json_keyvalue 'size'   "$4" 		# debug only
+	json_keyvalue 'data'   "$5" last
+	printf '%s\n' '}'
+}
+
+preview_get_image()	# deps: convert, base64
+{
+	local file="$1"
+	local format='avif'
+	local x=256
+	local y=256
+	local resize="${x}x${y}>"	# dont enlarge images smaller than X*Y
+	local b64
+
+	b64="$( convert "$file"[0] -quality 30 -resize "$resize" $format:- | base64 -w0 )"
+
+	json_out_preview_image "$format" "$x" "$y" "${#b64}" "$b64"
+}
+
+image_hash_get()
+{
+	local file="$1"
+
+	image_hash_blockhash "$file"
+}
+
+image_hash_blockhash()	# deps: blockhash, cut, convert
+{
+	local file="$1"
+
+	convert "$file" -resize 640x480 png:- | blockhash --bits 16 --quick - | cut -d' ' -f1
+}
+			# FIXME! UNUSED!
+image_hash_polarfft()	# deps: convert
+{			# http://www.fmwconcepts.com/imagemagick/phashes/
+	local file="$1"
+
+	convert "$file" +repage -alpha off -colorspace gray -resize 256x256! \
+		-auto-level -blur 0x1 -distort depolar 0 -fft -delete 1 \
+		-gravity northwest -crop 15x15+122+122 +repage -type grayscale txt:-
+}
+
+image_ocr_get_text()	# deps: tesseract, grep
+{
+	local file="$1"
+	local languages='eng+deu'
+	local text
+
+	tesseract -l "$languages" "$file" - 2>/dev/null | grep -v '^[[:space:]]*$'
+}
+
+metadata_get_image()	# deps: identify
+{			#       https://imagemagick.org/script/identify.php | e.g. identify -verbose <file>
+	local file="$1"
+
+	local api_version=1
+	local rc=0
+
+	local format width height depth colors frames
+	local lens lens1 lens2 lens3 lens4 text perceptual_hash
+	local latitude longitude altitude lat lon alt
+	local unix date1 date2 date3 date4 date5 date6
+
+	format="width=%[width];height=%[height];depth=%[depth];colors=%k;"
+	format="${format}date1='%[date:create]';"
+	format="${format}date2='%[date:modify]';"
+	format="${format}date3='%[EXIF:DateTime]';"
+	format="${format}date4='%[EXIF:DateTimeDigitized]';"
+	format="${format}date5='%[EXIF:DateTimeOriginal]';"
+	format="${format}date6='%[EXIF:GPSDateStamp]';"
+	format="${format}lens1='%[EXIF:LensMake]';lens2='%[EXIF:LensModel]';"
+	format="${format}lens3='%[EXIF:Make]';lens4='%[EXIF:Model]';"
+	format="${format}latitude='%[EXIF:GPSLatitude] %[EXIF:GPSLatitudeRef]';"
+	format="${format}longitude='%[EXIF:GPSLongitude] %[EXIF:GPSLongitudeRef]';"
+	format="${format}altitude='%[EXIF:GPSAltitude] %[EXIF:GPSAltitudeRef]';"
+
+	# gif + apng
+	# animations are tricky! TODO: enforce a new mimetype, e.g. video/gif?
+	# shellcheck disable=SC2046
+	eval $( identify -format "frames=%n\n" "$file" 2>/dev/null | tail -n1 )
+
+	# faster on animations: only work on 1st frame = file[0]
+	# shellcheck disable=SC2046
+	eval $( identify -format "$format" -- "$file"[0] 2>/dev/null || printf '%s\n' "rc=$?" )
+
+	unix="$( date_get_oldest "$date1" "$date2" "$date3" "$date4" "$date5" "$date6" )"
+	case "$lens1" in "$lens3") lens3= ;; esac
+	case "$lens2" in "$lens4") lens4= ;; esac
+	lens="${lens1}${lens1:+ }${lens2}${lens2:+ }${lens3}${lens3:+ }${lens4}"
+	lat="$( normalize_latitude "$latitude" )"
+	lon="$( normalize_longitude "$longitude" )"
+	alt="$( normalize_altitude "$altitude" )"
+
+	text="$( image_ocr_get_text "$file" )"
+	perceptual_hash="$( image_hash_get "$file" )"
+
+	json_out_image	"$rc" "$width" "$height" "$depth" "$colors" \
+			"$frames" "$unix" "$lens" "$lat" "$lon" "$alt" \
+			"$text" "$perceptual_hash" "$api_version"
+}

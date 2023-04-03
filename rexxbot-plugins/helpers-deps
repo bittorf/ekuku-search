@@ -1,0 +1,134 @@
+#!/bin/sh
+# shellcheck shell=dash
+#
+# dependencies_get()
+# dependencies_check()
+
+			# deps: sort
+dependencies_get()	# returns list of annotated "deps: xy" applications
+{			# hint: shell-builtins are not marked, e.g.: printf, pwd, set, ...
+	local file line word
+	local main="$0"
+	local dbserver='postgres'
+
+	for file in $( function_files_get ) "$main"; do {
+		# e.g.:
+		# 		# deps: foo, bar, baz
+		# myfunction()
+		# {
+		#   ...
+		# }
+		while read -r line; do {
+			case "$line" in
+				*'# deps: '[a-z]*)
+					for word in $line; do {
+						case "$word" in
+							'#'|*'()'|'deps:'|foo*|bar*|baz) ;;
+							*) printf '%s\n' "${word%,*}"
+						esac
+					} done
+				;;
+			esac
+		} done <"$file"
+
+		printf '%s\n' "$dbserver"
+	} done | sort -u
+}
+
+dependencies_check()	# deps: pidof, sed, grep, test
+{
+	local option="$1"	# <empty> or 'missing_only'
+	local app path rc=0
+	local pid pidlist missing=
+
+	extract()	# deps: head, grep
+	{
+		# # ./rexxbot4.sh: 98: fpcalc: not found
+		head -n2 | grep -v ^"$0:" | grep "[0-9]" | head -n1 | grep .
+	}
+
+	hint()
+	{
+		printf '%s\n' "   ### please install '$*'"
+	}
+
+	for app in $( dependencies_get ); do {
+		if path="$( command -v "$app" )"; then
+			[ "$option" = 'missing_only' ] && continue
+			printf '%s\n' "app: '$app' => $path"
+			printf '%s' "   # "
+		elif pidlist="$( pidof "$app" )"; then
+			[ "$option" = 'missing_only' ] && continue
+			printf '%s' "app: '$app' => "
+			for pid in $pidlist; do sed -n "s/^\(.*$app\)[^a-z].*/\1\n/p" "/proc/$pid/cmdline" | grep -v ^"$app"$ ; done
+			printf '%s' "   # running: "
+		else
+			printf '%s\n' "app: '$app'"
+			printf '%s\n\n' '   # is NOT installed or running'
+			rc=1
+			missing="$missing $app"
+		fi
+
+		case "$app" in
+			base64)    base64    --version 2>&1 | extract || hint 'coreutils' ;;
+			bc)        bc        --version 2>&1 | extract || hint 'coreutils' ;;
+			blockhash) blockhash --version 2>&1 | extract || hint 'blockhash | https://github.com/commonsmachinery/blockhash' ;;
+			cat)       cat       --version 2>&1 | extract || hint 'coreutils' ;;
+			cut)       cut       --version 2>&1 | extract || hint 'coreutils' ;;
+			convert)   convert   --version 2>&1 | extract || hint 'imagemagick' ;;
+			date)      date      --version 2>&1 | extract || hint 'coreutils' ;;
+			ffmpeg)    ffmpeg     -version 2>&1 | extract || hint 'ffmpeg' ;;
+			ffprobe)   ffprobe    -version 2>&1 | extract || hint 'ffmpeg' ;;
+			file)      file      --version 2>&1 | extract || hint 'file | https://github.com/file/file' ;;	# TODO: magic file
+			find)      find .    --version 2>&1 | extract || hint 'findutils' ;;
+			fpcalc)    fpcalc     -version 2>&1 | extract || hint 'libchromaprint-tools | https://github.com/acoustid/chromaprint' ;;
+			grep)      grep      --version 2>&1 | extract || hint 'coreutils' ;;
+			head)      head      --version 2>&1 | extract || hint 'coreutils' ;;
+			identify)  identify  --version 2>&1 | extract || hint 'imagemagick' ;;
+			jq)        jq        --version 2>&1 | extract || hint 'jq | https://stedolan.github.io/jq/' ;;
+			pidof)     printf '%s\n' "any version is ok"  || hint 'sysvinit-utils' ;;
+			postgres)  pidof postgres             || { rc=1; hint 'postgresql or pgsql-server'; } ;;
+			psql)      psql      --version 2>&1 | extract || hint 'postgresql-client-common' ;;
+			sed)       sed       --version 2>&1 | extract || hint 'sed' ;;
+			sha256sum) sha256sum --version 2>&1 | extract || hint 'coreutils' ;;
+			sort)      sort      --version 2>&1 | extract || hint 'coreutils' ;;
+			test)      printf '%s\n' "any version is ok"  || hint 'coreutils' ;;
+			tesseract) tesseract --version 2>&1 | extract || hint 'tesseract-ocr | https://github.com/tesseract-ocr/tesseract' ;;
+			tr)        tr        --version 2>&1 | extract || hint 'coreutils' ;;
+			*)
+				printf '%s\n' "### FIXME! ### add version caller"
+				rc=2
+			;;
+		esac
+	} done
+
+	case "$rc" in
+		0) printf '\n%s\n' "[OK] all needed applications are installed" ;;
+		*) printf '\n%s\n' "[ERROR] please install missing applications: $missing" ;; 
+	esac
+
+	return $rc
+}
+
+# === imagemagick ===
+# convert -list resource --> check for >256MB -> policy.xml
+# http://www.imagemagick.org/script/resources.php
+# identify -list policy
+#
+# === postgresql ===
+# sudo apt install postgresql postgresql-client
+# sudo -u postgres createuser --pwprompt bastian
+# sudo -u postgres createdb --owner=bastian rexxbot
+# echo 'localhost:5432:rexxbot:bastian:geheim' >>~/.pgpass && chmod 600 ~/.pgpass
+# psql -h localhost -U bastian --dbname=rexxbot
+#
+# === on ubuntu ===
+# git clone https://github.com/file/file
+# cd file
+# sudo apt -y install autoconf
+# sudo apt -y install libtool
+# autoreconf -f -i
+# ./configure && make && sudo make install
+# mv /usr/local/share/misc/magic.mgc ~/.magic.mgc
+# /usr/local/bin/file --version
+
