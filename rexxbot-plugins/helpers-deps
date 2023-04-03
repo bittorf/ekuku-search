@@ -95,6 +95,7 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			test)      printf '%s\n' "any version is ok"  || hint 'coreutils' ;;
 			tesseract) tesseract --version 2>&1 | extract || hint 'tesseract-ocr | https://github.com/tesseract-ocr/tesseract' ;;
 			tr)        tr        --version 2>&1 | extract || hint 'coreutils' ;;
+			ufraw-batch) ufraw-batch --version 2>&1 | extract || hint 'ufraw-batch | https://github.com/sergiomb2/ufraw' ;;
 			*)
 				printf '%s\n' "### FIXME! ### add version caller"
 				rc=2

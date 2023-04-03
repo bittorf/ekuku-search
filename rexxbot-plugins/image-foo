@@ -38,17 +38,23 @@ json_out_preview_image()
 	printf '%s\n' '}'
 }
 
-preview_get_image()	# deps: convert, base64
+preview_get_image()	# deps: convert, base64, ufraw-batch
 {
 	local file="$1"
 
 	local format='avif'		# see: https://en.wikipedia.org/wiki/AVIF
+	local quality=30
 	local x=256
 	local y=256
 	local resize="${x}x${y}>"	# dont enlarge images smaller than X*Y
 	local b64
 
-	b64="$( convert "$file"[0] -quality 30 -resize "$resize" $format:- | base64 -w0 )"
+	b64="$( convert "$file"[0] -quality "$quality" -resize "$resize" $format:- | base64 -w0 )"
+	[ -z "$b64" ] && {
+		# repeat it:
+		convert "$file"[0] -quality "$quality" -resize "$resize" $format:- >/dev/null 2>/dev/null
+		log "error during convert $?"
+	}
 
 	json_out_preview_image "$format" "$x" "$y" "${#b64}" "$b64"
 }

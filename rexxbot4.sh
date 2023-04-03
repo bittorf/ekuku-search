@@ -21,27 +21,15 @@ Usage:	$0 <action> <option1> <option2>
 	$0 table_show_files
 	$0 table_show_meta
 	$0 atomic
+
+	$0 test_images <dir>
+	$0 show_images <dir>
 	$0 mime <file>
 
 	$0 check_deps
 	$0 check_code
 
 EOF
-}
-
-SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
-
-function_files_get()
-{
-	find "$SCRIPTDIR/rexxbot-plugins" -type f
-}
-
-include_plugins()
-{
-	local file
-
-	# shellcheck disable=SC1091
-	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
 }
 
 # === loop1 | fastscan === TODO: versions of files.txt
@@ -122,6 +110,20 @@ json_check_or_die()
 	}
 }
 
+function_files_get()
+{
+	find "$SCRIPTDIR/rexxbot-plugins" -type f
+}
+
+include_plugins()
+{
+	local file
+
+	# shellcheck disable=SC1091
+	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
+}
+
+SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
 include_plugins
 
 case "$ACTION" in
@@ -208,6 +210,15 @@ case "$ACTION" in
 		esac
 
 		# log "ready-insert"
+	;;
+	test_images)
+		find "$ARG1" -type f | while read -r LINE; do {
+			MIME="$( mimetype_get "$LINE" )"
+
+			case "$MIME" in
+				image/*) $0 mime "$LINE" || exit 1 ;;
+			esac
+		} done
 	;;
 	show_images)
 		find "$ARG1" -type f | while read -r LINE; do {
