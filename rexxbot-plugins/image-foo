@@ -38,10 +38,10 @@ json_out_preview_image()
 	printf '%s\n' '}'
 }
 
-preview_get_image()	# deps: convert, base64, ufraw-batch
+preview_get_image()	# deps: magick, base64
 {
-	local file="$1"
-
+	local file="$1"			# TODO: https://github.com/woltapp/blurhash
+					# TODO: https://stackoverflow.com/questions/49625771/how-to-recreate-the-preview-from-instagrams-media-preview-raw-data
 	local format='avif'		# see: https://en.wikipedia.org/wiki/AVIF
 	local quality=30
 	local x=256
@@ -49,14 +49,25 @@ preview_get_image()	# deps: convert, base64, ufraw-batch
 	local resize="${x}x${y}>"	# dont enlarge images smaller than X*Y
 	local b64
 
-	b64="$( convert "$file"[0] -quality "$quality" -resize "$resize" $format:- | base64 -w0 )"
-	[ -z "$b64" ] && {
-		# repeat it:
-		log "convert '$file'[0] -quality $quality -resize $resize $format:-"
-		convert "$file"[0] -quality "$quality" -resize "$resize" $format:- >/dev/null 2>/dev/null
-		log "error during convert $?"
+	imagefile_to_thumbnail_avif()	# workaround errors on: convert file -quality 30 -resize "$resize" avif:-
+	{
+		local tempdir rc=0
+		tempdir="$( mktemp -d )" || return
+
+		# create small PNG-file:
+		magick convert "$file"[0] -colors 255 -quality "$quality" -resize "$resize" -auto-orient "PNG8:$tempdir/out.png" || rc=$?
+
+		# convert to AVIF:
+		magick convert "$tempdir/out.png" "$tempdir/out.avif" || rc=$?
+
+		# output BASE64 string:
+		test -s "$tempdir/out.avif" && base64 -w0 <"$tempdir/out.avif"
+
+		rm -fR "$tempdir"
+		return $rc
 	}
 
+	b64="$( imagefile_to_thumbnail_avif "$file" )"
 	json_out_preview_image "$format" "$x" "$y" "${#b64}" "$b64" && test -n "$b64"
 }
 
@@ -92,7 +103,7 @@ image_ocr_get_text()	# deps: tesseract, grep
 	tesseract -l "$languages" "$file" - 2>/dev/null | grep -v '^[[:space:]]*$'
 }
 
-metadata_get_image()	# deps: identify
+metadata_get_image()	# deps: magick
 {			#       https://imagemagick.org/script/identify.php | e.g. identify -verbose <file>
 	local file="$1"
 
@@ -123,11 +134,11 @@ metadata_get_image()	# deps: identify
 	# gif + apng
 	# animations are tricky! TODO: enforce a new mimetype, e.g. video/gif?
 	# shellcheck disable=SC2046
-	eval $( identify -format "frames=%n\n" "$file" 2>/dev/null | tail -n1 )
+	eval $( magick identify -format "frames=%n\n" "$file" 2>/dev/null | tail -n1 )
 
 	# faster on animations: only work on 1st frame = file[0]
 	# shellcheck disable=SC2046
-	eval $( identify -format "$format" -- "$file"[0] 2>/dev/null || printf '%s\n' "rc=$?" )
+	eval $( magick identify -format "$format" -- "$file"[0] 2>/dev/null || printf '%s\n' "rc=$?" )
 
 	unix="$( date_get_oldest "$date1" "$date2" "$date3" "$date4" "$date5" "$date6" )"
 	case "$lens1" in "$lens3") lens3= ;; esac

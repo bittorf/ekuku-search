@@ -27,15 +27,16 @@ check_code()
 {
 	local file temp
 
-	temp="$( mktemp )"
-	
+	temp="$( mktemp )" || return 1
+
+	# print all files into one large:
 	for file in "$0" $( function_files_get ); do {
 		log "[OK] building all-in-one: $file"
 		cat "$file" && echo
 	} done >"$temp"
 
 	shellcheck --shell=dash "$temp"
-	rm "$temp"
+	rm -f "$temp"
 }
 
 debug_activated()
