@@ -36,7 +36,7 @@ EOF
 }
 
 # === loop1 | fastscan === TODO: versions of files.txt
-# 1) scan direcory and get 4 values:
+# 1) scan directory and get 4 values:
 #    a) type of object (e.g. file or dir)
 #    b) modification time
 #    c) filesize
@@ -290,6 +290,10 @@ case "$ACTION" in
 		dependencies_check "$ARG1"
 	;;
 	check_code)
+		check_code
+	;;
+	check)
+		dependencies_check "$ARG1" || exit 1
 		check_code
 	;;
 	*)

@@ -23,7 +23,7 @@ log()
 	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
 }
 
-check_code()	# deps: ctags
+check_code()	# deps: ctags, codespell
 {
 	local file temp line
 
@@ -55,6 +55,7 @@ check_code()	# deps: ctags
 		esac
 	} done
 
+	codespell "$temp"
 	shellcheck --shell=dash "$temp"
 	rm -f "$temp"
 }

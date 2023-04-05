@@ -19,7 +19,7 @@ prepare_db()
 	# column   | looks like e.g.:
 	# ---------+---------------------------------
 	# id       | 2506723
-	# type     | f (f=file, d=dir, l=link, s=socket, p=pipe, c=chardev?, b=blockdev, L=loop, N=nonexistent, ? = wont happen)
+	# type     | f (f=file, d=dir, l=link, s=socket, p=pipe, c=chardev?, b=blockdev, L=loop, N=nonexistent, ? = won't happen)
 	# mtime    | 1555443756.9321673270 [21 chars]
 	# dirname  | /tank/foo/bla
 	# basename | myfiles.txt.rar

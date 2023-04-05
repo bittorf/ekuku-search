@@ -76,6 +76,7 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			cat)       cat       --version 2>&1 | extract || hint 'coreutils' ;;
 			cut)       cut       --version 2>&1 | extract || hint 'coreutils' ;;
 			ctags)     ctags     --version 2>&1 | extract || hint 'ctags | https://github.com/universal-ctags/ctags' ;;
+			codespell) codespell --version 2>&1 | extract || hint 'codespell' ;;
 			convert)   convert   --version 2>&1 | extract || hint 'imagemagick' ;;
 			date)      date      --version 2>&1 | extract || hint 'coreutils' ;;
 			ffmpeg)    ffmpeg     -version 2>&1 | extract || hint 'ffmpeg' ;;
