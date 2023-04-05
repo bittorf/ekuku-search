@@ -261,19 +261,21 @@ case "$ACTION" in
 			SIZE="$( stat --printf="%s" "$ARG1" )"
 
 			echo "{"
+			echo "  \"comment\": \"file_metadata\","
 			echo "  \"filename\": \"$ARG1\","	# jsonsafe?
 			echo "  \"mime\": \"$MIME\","
+			echo "  \"debug:6225\": $( magick convert "$ARG1" png:- | wc -c ),"
 			echo "  \"size\": $SIZE"
 			echo "}"
 
 			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
 			$funcname_meta "$ARG1" >"$JSON" || RC=$?
-			cat "$JSON"
+			echo "# json:meta" && cat "$JSON"
 			json_check_or_die "$JSON"
 
 			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_preview '$ARG1'" debug
 			$funcname_preview "$ARG1" >"$JSON" || RC=$?
-			cat "$JSON"
+			echo "# json:preview" && cat "$JSON"
 			json_check_or_die "$JSON" && rm -f "$JSON"
 
 			test "$RC" = 0
