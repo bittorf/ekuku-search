@@ -35,6 +35,14 @@ Usage:	$0 <action> <option1> <option2>
 EOF
 }
 
+# naming:
+# rexxbot (initially, around 1993) => bot in the name is not nice
+# filebot (already taken: https://www.filebot.net)
+# file_cabinet => too arbitrary
+# ekuku-bot => bot in the name is not nice
+# ekuku-search => ekuku is in wikipedia since ~ may 2012
+# ^^^^^^^^^^^^ lets use this
+
 # === loop1 | fastscan === TODO: versions of files.txt
 # 1) scan directory and get 4 values:
 #    a) type of object (e.g. file or dir)
@@ -93,7 +101,7 @@ loop2_mime_and_sha256()		# deps: test
 
 	while true; do {
 		file="$( db_select_nextfile_without_mime )"
-		[ -f "$file" ] || return 1
+		[ -f "$file" ] || return 0
 
 		mime="$( mimetype_get "$file" )"
 		sha256="$( sha256_get "$file" )"
