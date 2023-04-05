@@ -92,7 +92,14 @@ json_linebreaks()	# deps: sed, tr
 
 	# linebreaks to literal '\\'
 	# we remove all backslashes, otherwise it can lead to invalides e.g. \\\
-	printf '%s\n' "$text" | tr -d "\\" | sed ':a;N;$!ba;s/\n/\\\\/g'
+
+	# see:
+	# https://cygwin.com/pipermail/cygwin/2018-December/239487.html
+
+	# test:
+	# son_linebreaks "$( printf '%s\n%s\n' line1 line2 )"
+
+	printf '%s\n' "$text" | tr -d \\\\ | sed ':a;N;$!ba;s/\n/\\\\/g'
 }
 
 			# deps: sed
