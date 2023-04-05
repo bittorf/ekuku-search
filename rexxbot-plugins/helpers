@@ -23,9 +23,9 @@ log()
 	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
 }
 
-check_code()
+check_code()	# deps: ctags
 {
-	local file temp
+	local file temp line
 
 	temp="$( mktemp )" || return 1
 
@@ -34,6 +34,26 @@ check_code()
 		log "[OK] building all-in-one: $file"
 		cat "$file" && echo
 	} done >"$temp"
+
+	# https://github.com/koalaman/shellcheck/issues/2126
+	ctags --sort=no --language-force=sh -x "$temp" | \
+	while read -r line; do {
+		# e.g.: loop1_fastscan   function     82 ./rexxbot4.sh    loop1_fastscan()
+		# shellcheck disable=SC2086
+		set -- $line
+
+		case "$2" in
+			function)
+				# search for 'name' but not 'name()'
+				if grep -q "$1[^(]\|${1}$" "$temp"; then
+					# echo "[OK] function used: $1"
+					:
+				else
+					echo "# function '$1' unused?"
+				fi
+			;;
+		esac
+	} done
 
 	shellcheck --shell=dash "$temp"
 	rm -f "$temp"

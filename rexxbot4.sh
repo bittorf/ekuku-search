@@ -15,12 +15,15 @@ Usage:	$0 <action> <option1> <option2>
 
   e.g:	$0 fastscan /dir/to/scan <debug>
 
-	$0 mimesha
+	$0 refill
 	$0 table_drop
 	$0 table_show
 	$0 table_show_files
 	$0 table_show_meta
+
+	$0 fastscan
 	$0 atomic
+	$0 mimesha
 
 	$0 test_images <dir>
 	$0 show_images <dir>
@@ -234,8 +237,8 @@ case "$ACTION" in
 	mime)
 		MIME="$( mimetype_get "$ARG1" )"
 
-		MIMEPRE="${MIME%/*}"
-		MIMESUB="${MIME#*/}"	# unused
+		MIMEPRE="${MIME%/*}"	# e.g. image
+		MIMESUB="${MIME#*/}"	# e.g. gif
 		JSON="$( mktemp )" || exit 1
 
 		log "detected: $MIME (pre: $MIMEPRE sub: $MIMESUB) -> $ARG1" debug
@@ -264,7 +267,7 @@ case "$ACTION" in
 			echo "  \"comment\": \"file_metadata\","
 			echo "  \"filename\": \"$ARG1\","	# jsonsafe?
 			echo "  \"mime\": \"$MIME\","
-			echo "  \"debug:6225\": $( magick convert "$ARG1" png:- | wc -c ),"
+			echo "  \"debug:6225\": $( magick convert "$ARG1" png:- | wc -c ),"	# https://github.com/ImageMagick/ImageMagick/issues/6225
 			echo "  \"size\": $SIZE"
 			echo "}"
 

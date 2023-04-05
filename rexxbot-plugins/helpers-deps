@@ -75,6 +75,7 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			blockhash) blockhash --version 2>&1 | extract || hint 'blockhash | https://github.com/commonsmachinery/blockhash' ;;
 			cat)       cat       --version 2>&1 | extract || hint 'coreutils' ;;
 			cut)       cut       --version 2>&1 | extract || hint 'coreutils' ;;
+			ctags)     ctags     --version 2>&1 | extract || hint 'ctags | https://github.com/universal-ctags/ctags' ;;
 			convert)   convert   --version 2>&1 | extract || hint 'imagemagick' ;;
 			date)      date      --version 2>&1 | extract || hint 'coreutils' ;;
 			ffmpeg)    ffmpeg     -version 2>&1 | extract || hint 'ffmpeg' ;;
