@@ -29,7 +29,8 @@ prepare_db()
 
 	cat <<EOF
 SET client_min_messages = error;
-CREATE TABLE IF NOT EXISTS objects (
+
+CREATE TABLE IF NOT EXISTS rexxbot.objects (
   id       BIGSERIAL PRIMARY KEY,
   type     VARCHAR (1),
   mtime    TIMESTAMP,
@@ -39,7 +40,7 @@ CREATE TABLE IF NOT EXISTS objects (
   sha256   VARCHAR (64)
 );
 
-CREATE TABLE IF NOT EXISTS metadata (
+CREATE TABLE IF NOT EXISTS rexxbot.metadata (
   id       BIGSERIAL PRIMARY KEY,
   mime     VARCHAR (255),
   Vmime    INT,
@@ -68,10 +69,10 @@ db_query()	# deps: psql
 db_fetch_nextfile_without_sha256()	# mark as 'queued', returns ID
 {
 	db_query "
-UPDATE objects SET
+UPDATE rexxbot.objects SET
   sha256 = 'queued'
 WHERE id IN (
-  SELECT id FROM objects WHERE
+  SELECT id FROM rexxbot.objects WHERE
     type = 'f' AND
     sha256 IS NULL
   LIMIT 1 FOR UPDATE
@@ -84,12 +85,12 @@ db_select_file_from_id()
 {
 	local id="$1"
 
-	db_query "SELECT dirname||'/'||basename FROM objects WHERE id = $id"
+	db_query "SELECT dirname||'/'||basename FROM rexxbot.objects WHERE id = $id"
 }
 
 db_select_nextfile_without_mime()
 {
-	db_query "SELECT dirname||'/'||basename FROM objects WHERE type = 'f' AND ( vmime < 2 or vmime IS NULL ) LIMIT 1"
+	db_query "SELECT dirname||'/'||basename FROM rexxbot.objects WHERE type = 'f' AND ( vmime < 2 or vmime IS NULL ) LIMIT 1"
 }
 
 db_insert_meta_and_preview()
@@ -120,14 +121,14 @@ db_insert_mime_and_sha256()	# when output is empty,
 	local delimiter="\$anonblock\$"
 
 	db_query "
-UPDATE objects SET
+UPDATE rexxbot.objects SET
   sha256 = '$sha256'
 WHERE id = $id;
 "
 	# does exist already?
 	# if not not: query ALL metadata
 	db_query "
-INSERT INTO metadata (mime, Vmime, sha256)
+INSERT INTO rexxbot.metadata (mime, Vmime, sha256)
   VALUES ('$mime', '$mimeapi_version', '$sha256')
 ON CONFLICT (sha256)
   DO NOTHING
@@ -140,7 +141,7 @@ pump_into_db()	# deps: psql
 	if [ "$ARG2" = debug ]; then
 		while read -r LINE; do printf '%s\n' "$LINE"; done
 	else
-		psql --quiet -h localhost -U bastian --dbname=rexxbot
+		LC_ALL=C psql --quiet -h localhost -U bastian --dbname=rexxbot
 	fi
 }
 				# deps: cat
@@ -153,7 +154,7 @@ findoutput_to_sqlcommands()	# e.g. find /foo -printf 'type: %y mtime: %TF %TT di
 	local basename='%f'
 	local pathname='%p'
 	local sha256=NULL
-	local tablename='objects'
+	local tablename='rexxbot.objects'
 	local delimiter="\$anonblock\$"
 
 	# this works around path/filenames with single quotes:

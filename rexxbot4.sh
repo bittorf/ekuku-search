@@ -140,21 +140,24 @@ include_plugins
 case "$ACTION" in
 	table_drop)
 		set -x
-		db_query "DROP TABLE objects"
-		db_query "DROP TABLE metadata"
+		db_query "DROP TABLE rexxbot.objects"
+		db_query "DROP TABLE rexxbot.metadata"
 	;;
 	table_show)
 		CONDITION=
 		test -n "$ARG1" && CONDITION="WHERE $ARG1 = '$ARG2'"
 
-		db_query "SELECT * FROM objects $CONDITION" human
-		db_query "SELECT * FROM metadata" human
+		db_query "SELECT * FROM rexxbot.objects $CONDITION" human
+		db_query "SELECT * FROM rexxbot.metadata" human
 	;;
 	table_show_files)
-		db_query "SELECT * FROM objects WHERE type = 'f'" human
+		db_query "SELECT * FROM rexxbot.objects WHERE type = 'f'" human
 	;;
 	table_show_meta)
-		db_query "SELECT * FROM metadata" human
+		db_query "SELECT * FROM rexxbot.metadata" human
+	;;
+	prepare_db)
+		prepare_db | pump_into_db
 	;;
 	fastscan)
 		loop1_fastscan "${ARG1:-testdir}" | pump_into_db
@@ -178,11 +181,11 @@ case "$ACTION" in
 			$0 atomic || break
 		} done
 
-		C1="$( db_query 'select count(distinct(sha256)) from objects  where sha256 is not null' )"
-		C2="$( db_query 'select count(distinct(sha256)) from metadata where sha256 is not null' )"
-		C3="$( db_query "select count(sha256) from metadata where data->'rc' = '1';" )"
-		C4="$( db_query "select count(sha256) from metadata where data is null and mime like 'image/%';" )"
-		C5="$( db_query "select count(sha256) from metadata where preview is null and mime like 'image/%';" )"
+		C1="$( db_query 'select count(distinct(sha256)) from rexxbot.objects  where sha256 is not null' )"
+		C2="$( db_query 'select count(distinct(sha256)) from rexxbot.metadata where sha256 is not null' )"
+		C3="$( db_query "select count(sha256) from rexxbot.metadata where data->'rc' = '1';" )"
+		C4="$( db_query "select count(sha256) from rexxbot.metadata where data is null and mime like 'image/%';" )"
+		C5="$( db_query "select count(sha256) from rexxbot.metadata where preview is null and mime like 'image/%';" )"
 		# select data->>'colors' from metadata where data->>'colors' is not null;
 
 		echo
@@ -302,7 +305,30 @@ case "$ACTION" in
 	;;
 	check)
 		dependencies_check "$ARG1" || exit 1
-		check_code
+		check_code || exit 1
+
+		# systemctl status postgresql
+		# cat /home/bastian/.pgpass
+		#
+		# sudo -u postgres createuser bastian
+		# sudo -u postgres psql -c 'create database rexxbot;'
+		# sudo -u postgres psql -c 'grant all privileges on database rexxbot to bastian;'
+		# sudo -u postgres psql -c "alter user bastian with encrypted password 'geheim';"
+
+		# sudo -u postgres psql -c "create schema rexxbot;"
+		# sudo -u postgres psql -c "SET search_path TO rexxbot;"
+
+		# sudo -u postgres psql -c 'ALTER DATABASE rexxbot OWNER TO bastian;'
+		# sudo -u postgres psql -c 'ALTER SCHEMA rexxbot OWNER TO bastian;'
+
+		# sudo -u postgres psql --dbname=rexxbot -c 'grant usage,create on schema rexxbot to bastian;'
+		# sudo -u postgres psql -c 'GRANT ALL ON SCHEMA public TO bastian;'
+		# sudo -u postgres psql -c 'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA rexxbot TO bastian;'
+		# sudo -u postgres psql -c 'grant all privileges on database rexxbot to bastian;'
+		# sudo -u postgres psql -c 'grant usage,create on schema rexxbot to bastian;'
+
+		# psql --quiet -h localhost -U bastian --dbname=rexxbot -P pager=off -c "\l+"	// list databases
+		# psql --quiet -h localhost -U bastian --dbname=rexxbot -P pager=off -c "\dn+"	// list schemas => namespaces
 	;;
 	*)
 		usage && false
