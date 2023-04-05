@@ -104,7 +104,7 @@ db_insert_meta_and_preview()
 	local q="\$singlequotes\$"
 
 	db_query "
-UPDATE metadata SET
+UPDATE rexxbot.metadata SET
   data = ${q}${json_metadata}${q},
   preview = ${q}${json_preview}${q}
 WHERE sha256 = '$sha256';

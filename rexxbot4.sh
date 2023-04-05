@@ -21,7 +21,7 @@ Usage:	$0 <action> <option1> <option2>
 	$0 table_show_files
 	$0 table_show_meta
 
-	$0 fastscan
+	$0 fastscan <dir>
 	$0 atomic
 	$0 mimesha
 
@@ -196,6 +196,7 @@ case "$ACTION" in
 		echo "leeres image-preview-json: $C5"
 	;;
 	atomic)
+		while true; do {
 		# table: objects
 		id="$( db_fetch_nextfile_without_sha256 )"	# mark as 'queued'
 		log "id: '$id'"
@@ -222,8 +223,7 @@ case "$ACTION" in
 
 			*) log "not handled mime: '$mime'" ;;
 		esac
-
-		# log "ready-insert"
+		} done
 	;;
 	test_images)
 		find "$ARG1" -type f | while read -r LINE; do {
