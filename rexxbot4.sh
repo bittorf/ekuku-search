@@ -258,10 +258,12 @@ case "$ACTION" in
 		# deps: jq
 		if LC_ALL=C command -v "$funcname_meta" >/dev/null; then
 			RC=0
+			SIZE="$( stat --printf="%s" "$ARG1" )"
 
 			echo "{"
-			echo "  \"filename\": \"$ARG1\""	# jsonsafe?
-			echo "  \"mime\": \"$MIME\""
+			echo "  \"filename\": \"$ARG1\","	# jsonsafe?
+			echo "  \"mime\": \"$MIME\","
+			echo "  \"size\": $SIZE"
 			echo "}"
 
 			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
