@@ -35,58 +35,6 @@ Usage:	$0 <action> <option1> <option2>
 EOF
 }
 
-# naming:
-# rexxbot (initially, around 1993) => bot in the name is not nice
-# filebot (already taken: https://www.filebot.net)
-# file_cabinet => too arbitrary
-# ekuku-bot => bot in the name is not nice
-# ekuku-search => ekuku is in wikipedia since ~ may 2012
-# ^^^^^^^^^^^^ lets use this
-
-# === loop1 | fastscan === TODO: versions of files.txt
-# 1) scan directory and get 4 values:
-#    a) type of object (e.g. file or dir)
-#    b) modification time
-#    c) filesize
-#    d) /full/path/and/filename in [base64] format
-#   >files.txt
-#
-# === loop2 | index only new/changed objects ===
-# 2) read files.txt and query database for each line
-#    a) is this quadruple known?
-#
-# 3) if not known, do deeper analysis:
-#    a) file?: get sha256
-#    b) file?: get mimetype
-#    b) write [type,mtime,size,mimetype,dirname,basename,sha256] to database-table OBJECTS
-#
-# === loop3 | metadata ===
-# 1) lookup database which [size+sha256] have missing metadata
-#    b) write [size+sha256, json-metadata] to database-table METADATA
-#
-# === loop4 | archive ISO-unboxing ===
-# 1) provide helper
-#
-# === loop5 | archive unboxing ===
-# 2) lookup database which [size+sha256] are unanalysed
-#    a) mark [size+sha256] as '{archive:IS-IN-WORK@timestamp}' in database-table METADATA
-#    b) unbox archive and
-#    c) read each file/dir like loop1
-#    d) write [type,mtime,size,dirname,basename,sha256sum] to database table UNBOXED
-#    e) mark [size+sha256] as '{archive:unboxed}' 
-#
-# === loop6 | web-ui ===
-# 1) server connections
-#
-# === loop7 | web-ui-query-completer? ===
-# 1) foo
-#
-# === loop8 | metadate-API check+update ===
-# 1) query metadata-plugins and detect database entries with lower metadata API version
-#
-#######################################################################################
-
-
 loop1_fastscan()	# deps: find
 {
 	local dir="$1"
@@ -111,7 +59,7 @@ loop2_mime_and_sha256()		# deps: test
 	} done
 }
 
-json_check_or_die()
+json_check_or_die()	# deps: jq
 {
 	local file="$1"
 
@@ -121,7 +69,7 @@ json_check_or_die()
 	}
 }
 
-function_files_get()
+function_files_get()	# deps: find
 {
 	find "$SCRIPTDIR/rexxbot-plugins" -type f
 }
