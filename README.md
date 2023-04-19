@@ -4,7 +4,8 @@ everything works offline, it never uses the internet.
 
 ### How does it work?
 Scan given directory, extract and enrich metadata, store it  
-in a database and make it searchable. Also looks inside archives.
+in a database and make it searchable. Also looks inside archives  
+and supports arbitrary file- and foldernames.
 
 ### Looking into compressed files, archives or bundles
 It uncompresses archives, or archives in archives.  
