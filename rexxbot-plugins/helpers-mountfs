@@ -1,0 +1,52 @@
+#!/bin/sh
+#
+# this must run as 'root' and awaits mount or unmount-commands
+# in file '/tmp/ekuku-mountjob.txt', input is sanitized and it runs regulary
+
+mountfs_helper()	# deps: mount, umount, grep, dirname
+{
+	local dir action container mountdir fstype jobfile line
+
+	test "$( id -u )" = 0 || { log "[ERROR] must run as superuser"; return 1; }
+	dir="$( dirname "$( mktemp -u )" )"	# e.g. /tmp
+
+	while sleep 10; do {
+		for jobfile in "$dir/ekuku-mountjob.txt."*; do {
+			# e.g. mount   /my/file.iso /this/dir iso9660  and an optional comment
+			# e.g. unmount /my/file.iso /this/dir          and an optional comment
+			read -r line 2>/dev/null <"$jobfile" || continue
+
+			# shellcheck disable=SC2086
+			explode $line
+			action="$1"		# mount|unmount|done
+			container="$2"		# filename
+			mountdir="$3"		# dirname
+			fstype="${4:-auto}"	# e.g. ext4, vat ...
+
+			[ "$action" = 'mount' ] && {
+				grep -q "$fstype"$ /proc/filesystems || action="fail:wrong-fstype"
+				test -f "$container" || action="fail:nofile"
+				test -d "$mountdir"  || action="fail:nodir"
+			}
+
+			case "$action" in
+				'done')
+				;;
+				'mount')
+					echo 'done' >"$jobfile"
+					mount -t "$fstype" -o loop,user "$container" "$mountdir" 2>/dev/null || log "[ERROR] on mount: $line"
+				;;
+				'unmount')
+					echo 'done' >"$jobfile"
+					umount "$mountdir" || log "[ERROR] on unmount: $line"
+				;;
+				'exit')
+					log "[OK] stopping mountfs_helper" && return 0
+				;;
+				*)
+					log "[ERROR] action: $action  line: $line"		# e.g. on fail or invalid action
+				;;
+			esac
+		} done
+	} done
+}

@@ -79,9 +79,10 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			codespell) codespell --version 2>&1 | extract || hint 'codespell' ;;
 			convert)   convert   --version 2>&1 | extract || hint 'imagemagick' ;;
 			date)      date      --version 2>&1 | extract || hint 'coreutils' ;;
+			dirname)   dirname   --version 2>&1 | extract || hint 'coreutils' ;;
 			ffmpeg)    ffmpeg     -version 2>&1 | extract || hint 'ffmpeg' ;;
 			ffprobe)   ffprobe    -version 2>&1 | extract || hint 'ffmpeg' ;;
-			file)      file      --version 2>&1 | extract || hint 'file | https://github.com/file/file' ;;	# TODO: magic file
+			file)      file      --version 2>&1 | extract || hint 'file | https://www.darwinsys.com/file/' ;;	# TODO: check magic file
 			find)      find .    --version 2>&1 | extract || hint 'findutils' ;;
 			fpcalc)    fpcalc     -version 2>&1 | extract || hint 'libchromaprint-tools | https://github.com/acoustid/chromaprint' ;;
 			grep)      grep      --version 2>&1 | extract || hint 'coreutils' ;;
@@ -91,6 +92,7 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			ls)        # shellcheck disable=SC2012
 				   ls        --version 2>&1 | extract || hint 'coreutils' ;;
 			magick)    magick    --version 2>&1 | extract || hint 'magick | https://github.com/SoftCreatR/imei' ;;
+			mount)     mount     -V        2>&1 | extract || hint 'util-linux' ;;
 			pidof)     printf '%s\n' "any version is ok"  || hint 'sysvinit-utils' ;;
 			postgres)  pidof postgres             || { rc=1; hint 'postgresql or pgsql-server'; } ;;
 			psql)      psql      --version 2>&1 | extract || hint 'postgresql-client-common' ;;
@@ -101,6 +103,7 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			tesseract) tesseract --version 2>&1 | extract || hint 'tesseract-ocr | https://github.com/tesseract-ocr/tesseract' ;;
 			tr)        tr        --version 2>&1 | extract || hint 'coreutils' ;;
 			ufraw-batch) ufraw-batch --version 2>&1 | extract || hint 'ufraw-batch | https://github.com/sergiomb2/ufraw' ;;
+			umount)    umount     -V       2>&1 | extract || hint 'util-linux' ;;
 			*)
 				printf '%s\n' "### FIXME! ### add version caller"
 				rc=2

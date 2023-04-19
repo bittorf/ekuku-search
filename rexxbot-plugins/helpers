@@ -12,7 +12,7 @@
 # sha256_get()
 
 
-alias explode='set -f;set +f --'
+alias explode='set -f;set +f --'	# TODO: is this really portable?
 
 log()
 {
