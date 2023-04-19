@@ -17,8 +17,8 @@ which contains audio, video and a picture, which has text in it...
 It tries to extract and enrich metadata, e.g.  
 * audio: extract cover-pictures and generate text-transcription
 * video: extract subtitles
-* images: extract faces, text, location, camera etc.
-* and a lot more
+* images: extract faces, text, location, camera-model etc.
+* ...and a lot more
 
 ### Inner workings overview
 #### Job-1 _"fast scan"_
