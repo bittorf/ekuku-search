@@ -32,12 +32,19 @@ check_code()	# deps: ctags, codespell, head, file
 	# print all files into one large:
 	for file in "$0" $( function_files_get ); do {
 		log "[OK] building all-in-one: $file"
-		codespell "$file" || log "[HINT] codespell '$file' failed with rc:$?"
+		codespell "$file" || { log "[HINT] codespell '$file' failed with rc:$?"; return 1; }
 
 		if head -n1 "$file" | grep -q ^'#!'; then
-			cat "$file" && echo
+			if test -x "$file"; then
+				cat "$file" && echo
+			else
+				log "[ERROR] please mark it executable, e.g.:"
+				log "        chmod +x '$file'"
+				log "   and: git update-index --chmod=+x '$file'"
+				return 1
+			fi
 		else
-			log "[OK] omitting non-shell-script: $file"
+			log "[OK] ignoring non-shell-script: $file"
 		fi
 	} done >"$temp"
 
