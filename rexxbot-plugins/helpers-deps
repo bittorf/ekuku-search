@@ -88,6 +88,8 @@ dependencies_check()	# deps: pidof, sed, grep, test
 			head)      head      --version 2>&1 | extract || hint 'coreutils' ;;
 			identify)  identify  --version 2>&1 | extract || hint 'imagemagick' ;;
 			jq)        jq        --version 2>&1 | extract || hint 'jq | https://stedolan.github.io/jq/' ;;
+			ls)        # shellcheck disable=SC2012
+				   ls        --version 2>&1 | extract || hint 'coreutils' ;;
 			magick)    magick    --version 2>&1 | extract || hint 'magick | https://github.com/SoftCreatR/imei' ;;
 			pidof)     printf '%s\n' "any version is ok"  || hint 'sysvinit-utils' ;;
 			postgres)  pidof postgres             || { rc=1; hint 'postgresql or pgsql-server'; } ;;

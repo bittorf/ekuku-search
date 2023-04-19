@@ -1,10 +1,10 @@
 ### What is it?
 A desktop search engine for your private files,  
-everything works offline, it never uses online-services.
+everything works offline, it never uses the internet.
 
 ### How does it work?
-Scan a directory, extract and enrich metadata, store it  
-in database, make it searchable. Also looks inside archives.
+Scan given directory, extract and enrich metadata, store it  
+in a database and make it searchable. Also looks inside archives.
 
 ### Looking into archives or bundles
 It uncompresses archives, or archives in archives.  
@@ -19,22 +19,29 @@ It tries to extract and enrich metadata, e.g.
 * images: extract faces, text, location, camera etc.
 
 ### Inner workings overview
-* Job-1: use `find` on a directory to extract and write to database:
- * type of object (e.g. file or dir)
- * modification time
- * filesize
- * /full/path/and/filename
-* Job-2: extract checksum and mimetype of all files and write to database:
- * using `sha256sum` and [file](http://astron.com/pub/file/)
-* Job-3: extract metadata:
+* Job-1 "fast scan"
+ * use `find` on a directory to extract and insert into (or update) database:
+   * objecttype (e.g. file or dir)
+   * modification time
+   * filesize
+   * /full/path/and/filename
+* Job-2: "checksum and mimetype"
+ * extract checksum and mimetype of all files in database if not known yet or modification time changed
+ * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
+ * [file](http://astron.com/pub/file/)
+* Job-3: "metadata: extract and enrich"
  * for images using [magick](https://imagemagick.org/)
  * for videos using [ffmpeg](https://ffmpeg.org/)
- * for audio using [SoX](https://sox.sourceforge.net/)
+ * for audio using e.g. [SoX](https://sox.sourceforge.net/)
  * for text using [libreoffice](https://de.libreoffice.org/)
-* Job-4: extract archives or bundles:
- * e.g. unzip, untar, unrar, loop-mount, ...
+ * for binaries using [binwalk](https://github.com/ReFirmLabs/binwalk)
+ * insert into (or update) database
+* Job-4: "extract archives or bundles"
+ * e.g. temporarily unzip, untar, unrar, loop-mount ISO or other filesystem and others
+ * run Job1/2/3
+ * remove extraction or mount
 
-### Naming 
+### Why the name 'ekuku-search'?
 * rexxbot (initially, around 1993) => bot in the name is not nice
 * filebot (already taken: https://www.filebot.net)
 * file_cabinet => too arbitrary

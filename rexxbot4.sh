@@ -8,9 +8,6 @@ ARG2="$3"	# empty or <debug>
 usage()
 {
 	cat <<EOF
-
-=== file_cabinet / rexxbot / ekukubot / filebot / ekuku-search ===
-
 Usage:	$0 <action> <option1> <option2>
 
   e.g:	$0 fastscan /dir/to/scan <debug>
@@ -31,6 +28,7 @@ Usage:	$0 <action> <option1> <option2>
 
 	$0 check_deps
 	$0 check_code
+	$0 check
 
 EOF
 }
@@ -69,8 +67,9 @@ json_check_or_die()	# deps: jq
 	}
 }
 
-function_files_get()	# deps: find
+function_files_get()	# deps: find, ls
 {
+	ls README.md
 	find "$SCRIPTDIR/rexxbot-plugins" -type f
 }
 

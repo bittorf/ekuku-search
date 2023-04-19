@@ -23,7 +23,7 @@ log()
 	>&2 printf '%s\n' "$( LC_ALL=C date ) | $0: $message"
 }
 
-check_code()	# deps: ctags, codespell
+check_code()	# deps: ctags, codespell, head, file
 {
 	local file temp line
 
@@ -32,7 +32,13 @@ check_code()	# deps: ctags, codespell
 	# print all files into one large:
 	for file in "$0" $( function_files_get ); do {
 		log "[OK] building all-in-one: $file"
-		cat "$file" && echo
+		codespell "$file" || log "[HINT] codespell '$file' failed with rc:$?"
+
+		if head -n1 "$file" | grep -q ^'#!'; then
+			cat "$file" && echo
+		else
+			log "[OK] omitting non-shell-script: $file"
+		fi
 	} done >"$temp"
 
 	# https://github.com/koalaman/shellcheck/issues/2126
@@ -55,7 +61,6 @@ check_code()	# deps: ctags, codespell
 		esac
 	} done
 
-	codespell "$temp"
 	shellcheck --shell=dash "$temp"
 	rm -f "$temp"
 }
