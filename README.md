@@ -2,6 +2,24 @@
 A desktop search engine for your private files,  
 everything works offline, it never uses the internet.
 
+### Setup / Installation
+```
+git clone https://github.com/bittorf/ekuku-search.git
+cd ekuku-search
+
+# install needed programs (if any):
+./ekuku check_deps
+
+# get help:
+./ekuku help
+
+# testrun on a file, e.g.:
+./ekuku mime /path/to/file
+
+# let it index a directory:
+./ekuku scan /path/to/dir
+```
+
 ### How does it work?
 Scan given directory, extract and enrich metadata, store it  
 in a database and make it searchable. Also looks inside archives  
