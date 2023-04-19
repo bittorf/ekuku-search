@@ -6,46 +6,44 @@ everything works offline, it never uses the internet.
 Scan given directory, extract and enrich metadata, store it  
 in a database and make it searchable. Also looks inside archives.
 
-### Looking into archives or bundles
+### Looking into compressed files, archives or bundles
 It uncompresses archives, or archives in archives.  
-For example an ISO-file contains a ZIP, which contains a  
-TAR with a Libreoffice-document which contains a MP4, which  
-contains audio, video and a picture, which has text in it...
+For example an 7-zip compressed ISO-file contains a ZIP, which  
+contains a TAR with a Libreoffice-document which contains a MP4,  
+which contains audio, video and a picture, which has text in it...
 
 ### Metadata extraction and creation
 It tries to extract and enrich metadata, e.g.  
 * audio: extract cover-pictures and generate text-transcription
 * video: extract subtitles
 * images: extract faces, text, location, camera etc.
+* and a lot more
 
 ### Inner workings overview
-* Job-1 _"fast scan"_
- * using `find` on a directory to extract and insert into (or update) database:
-   * objecttype (e.g. file or dir)
-   * modification time
-   * filesize
-   * /full/path/and/filename
-
-* Job-2: _"checksum and MIME"_
- * extract checksum and mimetype of all files in database if not known yet or modification time changed
- * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
- * filetype using [file](http://astron.com/pub/file/)
-
-* Job-3: _"metadata: extract and enrich"_
- * for images using [magick](https://imagemagick.org/)
- * for videos using [ffmpeg](https://ffmpeg.org/)
- * for audio using e.g. [SoX](https://sox.sourceforge.net/)
- * for text using [libreoffice](https://de.libreoffice.org/)
- * for binaries using [binwalk](https://github.com/ReFirmLabs/binwalk)
- * insert into (or update) database
-
-* Job-4: _"uncompress files, extract archives or bundles"_
- * e.g. temporarily uncompress, unarchive, and/or loop-mount any filesystem
-   * compressor support for `gzip`, `xz`, `zstd`, `bzip2` and others
-   * archive support for `zip`, `tar`, `7z`, `rar`, `lha` and others
-   * filesystem support for `iso`,`squashfs`, `ext2/3/4`, `qcow2` and others
-     * run Job1/2/3
-     * remove extraction or mount
+#### Job-1 _"fast scan"_
+* using `find` on a directory to extract and insert into (or update) database:
+  * objecttype (e.g. file or dir)
+  * modification time
+  * filesize
+  * /full/path/and/filename
+#### Job-2: _"checksum and MIME"_
+* extract checksum and mimetype of all files in database if not known yet or modification time changed
+  * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
+  * filetype using [file](http://astron.com/pub/file/)
+#### Job-3: _"metadata: extract and enrich"_
+* for images using [magick](https://imagemagick.org/)
+* for videos using [ffmpeg](https://ffmpeg.org/)
+* for audio using e.g. [SoX](https://sox.sourceforge.net/)
+* for text using [libreoffice](https://de.libreoffice.org/)
+* for binaries using [binwalk](https://github.com/ReFirmLabs/binwalk)
+* insert into (or update) database
+#### Job-4: _"uncompress files, extract archives or bundles"_
+* e.g. temporarily uncompress, unarchive, and/or loop-mount any filesystem
+  * compressor support for `gzip`, `xz`, `zstd`, `bzip2` and others
+  * archive support for `zip`, `tar`, `7z`, `rar`, `lha` and others
+  * filesystem support for `iso`,`squashfs`, `ext2/3/4`, `qcow2` and others
+    * run Job1/2/3
+    * remove extraction or mount
 
 ### Why the name _ekuku-search_?
 * rexxbot (initially, around 1993) => bot in the name is not nice
