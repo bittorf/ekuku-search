@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=dash source=rexxbot-plugins/
+# shellcheck shell=dash source=ekuku-plugins/
 
 ACTION="$1"
 ARG1="$2"
@@ -70,7 +70,7 @@ json_check_or_die()	# deps: jq
 function_files_get()	# deps: find, ls
 {
 	ls README.md
-	find "$SCRIPTDIR/rexxbot-plugins" -type f
+	find "$SCRIPTDIR/ekuku-plugins" -type f
 }
 
 include_plugins()
@@ -78,10 +78,11 @@ include_plugins()
 	local file
 
 	# shellcheck disable=SC1091
-	for file in "$SCRIPTDIR/rexxbot-plugins/"*; do . "$file"; done
+	for file in "$PLUGINDIR/"*; do . "$file"; done
 }
 
 SCRIPTDIR="$( CDPATH='' cd -- "$( dirname -- "$0")" && pwd )"
+PLUGINDIR="$SCRIPTDIR/ekuku-plugins"
 include_plugins
 
 case "$ACTION" in
@@ -229,12 +230,12 @@ case "$ACTION" in
 			echo "  \"size\": $SIZE"
 			echo "}"
 
-			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
+			log "# file: '$ARG1' => for FILE in '$PLUGINDIR/'*; do . \$FILE; done && $funcname_meta '$ARG1'" debug
 			$funcname_meta "$ARG1" >"$JSON" || RC=$?
 			echo "# json:meta" && cat "$JSON"
 			json_check_or_die "$JSON"
 
-			log "# file: '$ARG1' => for FILE in '$SCRIPTDIR/rexxbot-plugins/'*; do . \$FILE; done && $funcname_preview '$ARG1'" debug
+			log "# file: '$ARG1' => for FILE in '$PLUGINDIR/'*; do . \$FILE; done && $funcname_preview '$ARG1'" debug
 			$funcname_preview "$ARG1" >"$JSON" || RC=$?
 			echo "# json:preview" && cat "$JSON"
 			json_check_or_die "$JSON" && rm -f "$JSON"
