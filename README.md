@@ -19,36 +19,43 @@ It tries to extract and enrich metadata, e.g.
 * images: extract faces, text, location, camera etc.
 
 ### Inner workings overview
-* Job-1 "fast scan"
- * use `find` on a directory to extract and insert into (or update) database:
+* Job-1 _"fast scan"_
+ * using `find` on a directory to extract and insert into (or update) database:
    * objecttype (e.g. file or dir)
    * modification time
    * filesize
    * /full/path/and/filename
-* Job-2: "checksum and mimetype"
+
+* Job-2: _"checksum and MIME"_
  * extract checksum and mimetype of all files in database if not known yet or modification time changed
  * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
- * [file](http://astron.com/pub/file/)
-* Job-3: "metadata: extract and enrich"
+ * filetype using [file](http://astron.com/pub/file/)
+
+* Job-3: _"metadata: extract and enrich"_
  * for images using [magick](https://imagemagick.org/)
  * for videos using [ffmpeg](https://ffmpeg.org/)
  * for audio using e.g. [SoX](https://sox.sourceforge.net/)
  * for text using [libreoffice](https://de.libreoffice.org/)
  * for binaries using [binwalk](https://github.com/ReFirmLabs/binwalk)
  * insert into (or update) database
-* Job-4: "extract archives or bundles"
- * e.g. temporarily unzip, untar, unrar, loop-mount ISO or other filesystem and others
- * run Job1/2/3
- * remove extraction or mount
 
-### Why the name 'ekuku-search'?
+* Job-4: _"uncompress files, extract archives or bundles"_
+ * e.g. temporarily uncompress, unarchive, and/or loop-mount any filesystem
+   * compressor support for `gzip`, `xz`, `zstd`, `bzip2` and others
+   * archive support for `zip`, `tar`, `7z`, `rar`, `lha` and others
+   * filesystem support for `iso`,`squashfs`, `ext2/3/4`, `qcow2` and others
+     * run Job1/2/3
+     * remove extraction or mount
+
+### Why the name _ekuku-search_?
 * rexxbot (initially, around 1993) => bot in the name is not nice
 * filebot (already taken: https://www.filebot.net)
 * file_cabinet => too arbitrary
 * ekuku-bot => bot in the name is not nice
-* ekuku-search => ekuku is in wikipedia since ~ may 2012
-  ^^^^^^^^^^^^ lets use this
+* ekuku-search => ekuku is in wikipedia since ~may 2012
+* ^^^^^^^^^^^^ lets use this
 
+```
 ### ToDo:
 # === loop1 | fastscan ===
 # 1) scan directory and get 4 values:
@@ -90,3 +97,4 @@ It tries to extract and enrich metadata, e.g.
 #
 # === loop8 | metadate-API check+update ===
 # 1) query metadata-plugins and detect database entries with lower metadata API version
+```
