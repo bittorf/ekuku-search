@@ -20,8 +20,9 @@ json_out_image()
 	json_keyvalue 'lon'   "${10}" ignore 0
 	json_keyvalue 'alt'   "${11}" ignore 0
 	json_keyvalue 'text'  "${12}"
-	json_keyvalue 'phash' "${13}"
-	json_keyvalue 'api'   "${14}" last
+	json_keyvalue 'comment' "${13}"
+	json_keyvalue 'phash' "${14}"
+	json_keyvalue 'api'   "${15}" last
 	printf '%s\n' '}'
 
 	case "$1" in 0) ;; *) false ;; esac
@@ -102,7 +103,7 @@ metadata_get_image()	# deps: magick
 
 	local format width height depth colors frames
 	local lens lens1 lens2 lens3 lens4 text perceptual_hash
-	local latitude longitude altitude lat lon alt
+	local latitude longitude altitude lat lon alt comment
 	local unix date1 date2 date3 date4 date5 date6
 
 	# build printf-like output string for 'identify':
@@ -115,6 +116,7 @@ metadata_get_image()	# deps: magick
 	format="${format}date6='%[EXIF:GPSDateStamp]';"
 	format="${format}lens1='%[EXIF:LensMake]';lens2='%[EXIF:LensModel]';"
 	format="${format}lens3='%[EXIF:Make]';lens4='%[EXIF:Model]';"
+	format="${format}comment='%c';"
 	format="${format}latitude='%[EXIF:GPSLatitude] %[EXIF:GPSLatitudeRef]';"
 	format="${format}longitude='%[EXIF:GPSLongitude] %[EXIF:GPSLongitudeRef]';"
 	format="${format}altitude='%[EXIF:GPSAltitude] %[EXIF:GPSAltitudeRef]';"
@@ -143,5 +145,5 @@ metadata_get_image()	# deps: magick
 
 	json_out_image	"$rc" "$width" "$height" "$depth" "$colors" \
 			"$frames" "$unix" "$lens" "$lat" "$lon" "$alt" \
-			"$text" "$perceptual_hash" "$api_version"
+			"$text" "$comment" "$perceptual_hash" "$api_version"
 }
