@@ -30,7 +30,7 @@ It tries to extract and enrich metadata, e.g.
 #### Job-2: _"checksum and MIME"_
 * extract checksum and mimetype of all files in database if not known yet or modification time changed
   * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
-  * filetype using [file](http://astron.com/pub/file/)
+  * filetype using [file](http://www.darwinsys.com/file/)
 #### Job-3: _"metadata: extract and enrich"_
 * for images using [magick](https://imagemagick.org/) and [tesseract](https://github.com/tesseract-ocr/tesseract)
 * for videos using [ffmpeg](https://ffmpeg.org/)
