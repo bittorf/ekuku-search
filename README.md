@@ -32,7 +32,7 @@ It tries to extract and enrich metadata, e.g.
   * `sha256sum`, e.g. from [coreutils](https://git.savannah.gnu.org/gitweb/?p=coreutils.git)
   * filetype using [file](http://astron.com/pub/file/)
 #### Job-3: _"metadata: extract and enrich"_
-* for images using [magick](https://imagemagick.org/)
+* for images using [magick](https://imagemagick.org/) and [tesseract](https://github.com/tesseract-ocr/tesseract)
 * for videos using [ffmpeg](https://ffmpeg.org/)
 * for audio using e.g. [SoX](https://sox.sourceforge.net/)
 * for text using [libreoffice](https://de.libreoffice.org/)
@@ -43,7 +43,7 @@ It tries to extract and enrich metadata, e.g.
   * compressor support for `gzip`, `xz`, `zstd`, `bzip2` and others
   * archive support for `zip`, `tar`, `7z`, `rar`, `lha` and others
   * filesystem support for `iso`,`squashfs`, `ext2/3/4`, `qcow2` and others
-    * run Job1/2/3
+    * run Job-1/2/3
     * remove extraction or mount
 
 ### Why the name _ekuku-search_?
