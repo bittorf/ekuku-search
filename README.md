@@ -65,7 +65,10 @@ It tries to extract and enrich metadata, e.g.
     * remove extraction or mount
 
 ### Why the name _ekuku-search_?
-* rexxbot (initially, around 1993) => bot in the name is not nice
+* rexxbot (initially, around 1993) => "bot" in the name is not nice
+* https://wireless.subsignal.org/index.php?title=Rexxbot
+* poormens-desktop-search-engine => too bulky
+* https://wireless.subsignal.org/index.php?title=Poormens_desktop_search_engine.sh
 * filebot (already taken: https://www.filebot.net)
 * file_cabinet => too arbitrary
 * ekuku-bot => bot in the name is not nice
@@ -114,4 +117,8 @@ It tries to extract and enrich metadata, e.g.
 #
 # === loop8 | metadate-API check+update ===
 # 1) query metadata-plugins and detect database entries with lower metadata API version
+
+TODO: http://wiki.redump.org/index.php?title=Dumping_Guides
+
+
 ```
